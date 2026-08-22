@@ -1,0 +1,21 @@
+[Unit]
+Description=GridSwarm Flexibility API
+After=network.target
+
+[Service]
+Type=simple
+User=gridswarm
+WorkingDirectory=/opt/gridswarm-backend
+Environment=GRIDSWARM_DB_PATH=/opt/gridswarm-backend/data/gridswarm_ledger.db
+Environment=GRIDSWARM_OCPP_ENABLED=0
+Environment=GRIDSWARM_RATE_LIMIT_PER_MINUTE=30
+# Environment=GRIDSWARM_API_KEYS=discom-bescom-2f9a:transformer-zone-7|transformer-zone-8
+ExecStart=/opt/gridswarm-backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=3
+
+# Do NOT add --workers here — see the note in Dockerfile / DEPLOY.md about
+# in-memory rate-limit and OCPP-registry state.
+
+[Install]
+WantedBy=multi-user.target

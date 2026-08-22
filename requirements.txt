@@ -1,0 +1,8 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.6
+pydantic>=2.9.2
+
+# Real-charger ingestion (OCPP 1.6) — only needed if you run with
+# GRIDSWARM_OCPP_ENABLED=1. Safe to leave installed either way.
+ocpp>=2.0.0
+websockets>=13.0

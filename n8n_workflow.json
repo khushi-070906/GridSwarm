@@ -1,0 +1,105 @@
+{
+  "name": "GridSwarm - Grid Event Dispatch",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "grid-event",
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      },
+      "name": "Webhook: Grid Event Detected",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:8000/fleet/demo",
+        "method": "GET"
+      },
+      "name": "Fetch EV Fleet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:8000/grid-event",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"signal\": $json.signal, \"evs\": $node[\"Fetch EV Fleet\"].json } }}"
+      },
+      "name": "Call Optimizer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {},
+          "conditions": [
+            {
+              "leftValue": "={{ $json.mobility_violations }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "name": "Safety Check: 0 Violations",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [960, 300]
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "name": "Send Actions to EV/Charger Systems",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1200, 200],
+      "notes": "Replace with OCPP / charger API call per action in dispatch plan"
+    },
+    {
+      "parameters": {},
+      "name": "Alert: Halt Dispatch",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1200, 420],
+      "notes": "Should never fire — protected EVs are excluded upstream. Alert + log if it does."
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems"
+      },
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1440, 300]
+    }
+  ],
+  "connections": {
+    "Webhook: Grid Event Detected": {
+      "main": [[{ "node": "Fetch EV Fleet", "type": "main", "index": 0 }]]
+    },
+    "Fetch EV Fleet": {
+      "main": [[{ "node": "Call Optimizer", "type": "main", "index": 0 }]]
+    },
+    "Call Optimizer": {
+      "main": [[{ "node": "Safety Check: 0 Violations", "type": "main", "index": 0 }]]
+    },
+    "Safety Check: 0 Violations": {
+      "main": [
+        [{ "node": "Send Actions to EV/Charger Systems", "type": "main", "index": 0 }],
+        [{ "node": "Alert: Halt Dispatch", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Actions to EV/Charger Systems": {
+      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+    }
+  }
+}

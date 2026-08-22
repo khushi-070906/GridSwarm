@@ -1,0 +1,23 @@
+services:
+  gridswarm:
+    build: .
+    ports:
+      - "8000:8000"   # HTTP API + /docs
+      - "9000:9000"   # OCPP 1.6 WebSocket listener (only used if enabled below)
+    environment:
+      # --- Real chargers (off by default) ---
+      GRIDSWARM_OCPP_ENABLED: "0"
+      GRIDSWARM_OCPP_PORT: "9000"
+
+      # --- DISCOM/DSO auth on /emergency-event, /emergency-scenario ---
+      # Unset -> a permissive "gridswarm-demo-key" (any zone) is used.
+      # Set a real registry before exposing this beyond a demo:
+      # GRIDSWARM_API_KEYS: "discom-bescom-2f9a:transformer-zone-7|transformer-zone-8"
+      GRIDSWARM_RATE_LIMIT_PER_MINUTE: "30"
+    volumes:
+      # Persist the SQLite payout ledger across container restarts/rebuilds.
+      - gridswarm-data:/srv/gridswarm/data
+    restart: unless-stopped
+
+volumes:
+  gridswarm-data:
