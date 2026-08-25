@@ -21,9 +21,11 @@ from .models import (
     DispatchPlan,
     GridConstraintSignal,
     FlexibilityCategory,
+    EVContext,         
 )
 from .flexibility import estimate_fleet
 from .incentives import payout_for_action
+
 
 # Priority order: cheapest/least-intrusive actions are not necessarily first —
 # we prioritize by how much confidence we have in the EV's flexibility.
@@ -54,7 +56,19 @@ def _action_for(ev: EV, category: FlexibilityCategory) -> tuple[ActionType, floa
 
     return ActionType.NO_ACTION, 0.0
 
-
+def _build_ev_context(ev: EV, flex_result) -> EVContext:
+    return EVContext(
+        soc_percent=ev.soc_percent,
+        required_soc_percent=ev.required_soc_percent,
+        departure_minutes=ev.departure_minutes,
+        battery_kwh=ev.battery_kwh,
+        max_charge_kw=ev.max_charge_kw,
+        max_discharge_kw=ev.max_discharge_kw,
+        currently_charging=ev.currently_charging,
+        opted_in_v2g=ev.opted_in_v2g,
+        flexibility_category=flex_result.category,
+        flexibility_score_kwh=flex_result.flexibility_score_kwh,
+    )
 def build_dispatch_plan(evs: List[EV], signal: GridConstraintSignal) -> DispatchPlan:
     flex_results = {r.ev_id: r for r in estimate_fleet(evs)}
     evs_by_id = {ev.id: ev for ev in evs}
@@ -74,28 +88,66 @@ def build_dispatch_plan(evs: List[EV], signal: GridConstraintSignal) -> Dispatch
     headroom_multiplier = 1.15 if signal.is_extreme_event else 1.0
 
     for r in candidates:
+        ev = evs_by_id[r.ev_id]
+
         if kw_reduced >= target * headroom_multiplier:
             actions.append(DispatchAction(
-                ev_id=r.ev_id, action=ActionType.NO_ACTION,
+                ev_id=r.ev_id,
+                action=ActionType.NO_ACTION,
                 reason="Target reduction already met — no action needed.",
+                ev_context=_build_ev_context(
+                    ev,
+                    flex_results[r.ev_id]
+                ),
             ))
             continue
 
-        ev = evs_by_id[r.ev_id]
+
         action_type, kw = _action_for(ev, r.category)
         if action_type == ActionType.NO_ACTION:
-            actions.append(DispatchAction(ev_id=r.ev_id, action=action_type, reason=r.reason))
+            actions.append(
+                DispatchAction(
+                    ev_id=r.ev_id,
+                    action=action_type,
+                    reason=r.reason,
+                    ev_context=_build_ev_context(
+                        ev,
+                        flex_results[r.ev_id]
+                    ),
+                )
+            )
             continue
 
-        payout = payout_for_action(action_type, kw, signal.duration_minutes)
+        payout = payout_for_action(
+            action_type,
+            kw,
+            signal.duration_minutes
+        )
+
         actions.append(DispatchAction(
-            ev_id=r.ev_id, action=action_type, magnitude_kw=kw, payout_inr=payout, reason=r.reason,
+            ev_id=r.ev_id,
+            action=action_type,
+            magnitude_kw=kw,
+            payout_inr=payout,
+            reason=r.reason,
+            ev_context=_build_ev_context(
+                ev,
+                flex_results[r.ev_id]
+            ),
         ))
         kw_reduced += kw
 
     for r in protected:
+        ev = evs_by_id[r.ev_id]
+
         actions.append(DispatchAction(
-            ev_id=r.ev_id, action=ActionType.PROTECTED, reason=r.reason,
+            ev_id=r.ev_id,
+            action=ActionType.PROTECTED,
+            reason=r.reason,
+            ev_context=_build_ev_context(
+                ev,
+                flex_results[r.ev_id]
+            ),
         ))
 
     utilization_after = max(0.0, signal.utilization_percent - (kw_reduced / max(target, 1)) * (
