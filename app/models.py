@@ -44,12 +44,33 @@ class FlexibilityResult(BaseModel):
     reason: str
 
 
+class EVContext(BaseModel):
+    """
+    Snapshot of the EV state used to make the dispatch decision.
+    Sent to the dashboard so the decision is explainable.
+    """
+    soc_percent: float
+    required_soc_percent: float
+    departure_minutes: float
+    battery_kwh: float
+    max_charge_kw: float
+    max_discharge_kw: float
+    currently_charging: bool
+    opted_in_v2g: bool
+
+    flexibility_category: FlexibilityCategory
+    flexibility_score_kwh: float
+
+
 class DispatchAction(BaseModel):
     ev_id: str
     action: ActionType
     magnitude_kw: Optional[float] = None
     payout_inr: float = 0.0
     reason: str
+
+    # NEW
+    ev_context: Optional[EVContext] = None
 
 
 class GridConstraintSignal(BaseModel):
