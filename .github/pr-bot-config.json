@@ -1,0 +1,7 @@
+{
+  "requireLinkedIssue": false,
+  "requireAssigneeOnIssue": false,
+  "minDescriptionLength": 20,
+  "blockedLabels": ["triage", "needs-discussion"],
+  "contributingGuidePath": "CONTRIBUTING.md"
+}

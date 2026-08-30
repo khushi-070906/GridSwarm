@@ -1,0 +1,122 @@
+name: PR Validation
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the BASE branch (default ref for pull_request_target) so we
+      # read config from trusted code, never from the fork's PR branch.
+      - uses: actions/checkout@v4
+
+      - name: Validate PR requirements
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let config = {};
+            try {
+              config = JSON.parse(fs.readFileSync('.github/pr-bot-config.json', 'utf8'));
+            } catch (e) {
+              core.info('No pr-bot-config.json found, using defaults.');
+            }
+
+            const requireLinkedIssue = config.requireLinkedIssue ?? false;
+            const requireAssigneeOnIssue = config.requireAssigneeOnIssue ?? false;
+            const minDescriptionLength = config.minDescriptionLength ?? 20;
+            const blockedLabels = config.blockedLabels ?? ['triage', 'needs-discussion'];
+            const contributingGuidePath = config.contributingGuidePath ?? 'CONTRIBUTING.md';
+
+            const pr = context.payload.pull_request;
+            const warnings = [];
+            const infos = [];
+
+            const body = pr.body || '';
+            if (body.trim().length < minDescriptionLength) {
+              warnings.push('**PR description is too short.** Please explain *what* changed and *why*.');
+            }
+
+            const issueMatch = body.match(/(close[sd]?|fixe[sd]?|resolve[sd]?)\s+#(\d+)/i);
+            const issueNumber = issueMatch ? parseInt(issueMatch[2], 10) : null;
+
+            if (requireLinkedIssue && !issueNumber) {
+              warnings.push('No linked issue found. Please reference the issue this PR addresses (e.g. `Fixes #123`).');
+            }
+
+            if (issueNumber) {
+              try {
+                const issue = await github.rest.issues.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                });
+
+                if (requireAssigneeOnIssue && issue.data.assignees.length === 0) {
+                  warnings.push(`Issue #${issueNumber} has no assignee. Please wait for a maintainer to assign it before submitting a PR.`);
+                }
+
+                const labels = issue.data.labels.map(l => (typeof l === 'string' ? l : l.name));
+                const blocking = labels.filter(l => blockedLabels.includes(l));
+                if (blocking.length > 0) {
+                  infos.push(`Issue #${issueNumber} is still labeled \`${blocking.join(', ')}\`. Please confirm it's been triaged/approved by a maintainer before submitting a PR.`);
+                }
+              } catch (e) {
+                infos.push(`Could not find issue #${issueNumber} — please double check the link.`);
+              }
+            }
+
+            const isFirstTime = ['FIRST_TIME_CONTRIBUTOR', 'FIRST_TIMER'].includes(pr.author_association);
+
+            let commentBody = '';
+            if (isFirstTime) {
+              commentBody += `👋 Thanks for your first contribution, @${pr.user.login}! A maintainer will take a look soon. Quick checklist while you wait:\n\n`;
+              commentBody += '- [ ] Tests added or updated\n- [ ] Docs updated if needed\n- [ ] PR description explains the change\n\n---\n\n';
+            }
+
+            if (warnings.length === 0 && infos.length === 0) {
+              commentBody += '✅ **PR looks good!** All automated checks passed.';
+            } else {
+              commentBody += '## ⚠️ PR Validation Warnings\n\n';
+              for (const w of warnings) commentBody += `⚠️ ${w}\n\n`;
+              for (const i of infos) commentBody += `ℹ️ ${i}\n\n`;
+              commentBody += `---\n*This PR can remain open, but please address these before requesting review. See the [Contributing Guide](../blob/main/${contributingGuidePath}).*`;
+            }
+
+            const marker = '<!-- pr-hygiene-bot -->';
+            commentBody = `${marker}\n${commentBody}`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+            });
+            const existing = comments.find(c => c.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: commentBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: commentBody,
+              });
+            }
+
+            if (warnings.length > 0) {
+              core.warning(`PR has ${warnings.length} validation warning(s).`);
+            }
