@@ -1,0 +1,12 @@
+/* ==========================================================================
+   Cross-cutting responsive rules (page-specific breakpoints live alongside
+   their components in dashboard.css / owner.css)
+   ========================================================================== */
+@media (max-width: 480px){
+  .brand .sub{display:none;}
+  main.content{padding:var(--sp-3);}
+  .card-body{padding:var(--sp-3);}
+  .stat .v{font-size:18px;}
+  .flow{flex-direction:column;}
+  .flow-arrow{transform:rotate(90deg);padding:2px 0;align-self:center;}
+}

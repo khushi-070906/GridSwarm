@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GridSwarm — Grid Operations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+<div class="shell">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark"></div>
+      <div class="name">GridSwarm</div>
+      <div class="sub">Grid Operations</div>
+    </div>
+    <div class="topbar-right">
+      <div class="mode-switch">
+        <a href="index.html" class="active">Operator</a>
+        <a href="owner.html">EV owner</a>
+      </div>
+      <div class="baseurl">
+        <span style="color:var(--ink-faint);font-size:11px;">API</span>
+        <input id="baseUrl" class="num" spellcheck="false"/>
+      </div>
+      <div class="status-pill">
+        <div id="statusDot" class="status-dot"></div>
+        <span id="statusText">Checking…</span>
+      </div>
+    </div>
+  </header>
+
+  <div id="errorBanner" class="error-banner"></div>
+
+  <main class="content">
+
+    <!-- ============ GRID STATUS HERO ============ -->
+    <section class="card">
+      <div class="card-body">
+        <div class="hero-status-row" id="heroStatusRow"></div>
+        <div class="hero">
+          <div class="gauge-wrap">
+            <div id="gauge"></div>
+            <div class="num" id="gaugeAfter" style="font-size:12px;color:var(--ink-dim);"></div>
+          </div>
+          <div>
+            <div class="hero-facts" id="heroFacts"></div>
+            <div class="hero-updated" id="heroUpdated" style="margin-top:8px;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ GRIDSWARM RESPONSE STORY ============ -->
+    <section class="card">
+      <div class="card-head"><div class="card-title">GridSwarm response</div></div>
+      <div class="card-body" style="padding:0;">
+        <div class="flow" id="responseFlow"></div>
+      </div>
+    </section>
+
+    <div class="grid-2col">
+      <!-- ============ LEFT: yard + dispatch decision ============ -->
+      <div class="stack">
+
+        <section class="card">
+          <div class="card-head">
+            <div class="card-title">Depot yard <span class="count" id="yardCount"></span></div>
+          </div>
+          <div class="yard-wrap" id="yardWrap">
+            <svg class="yard" id="yardSvg" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="empty-state" id="emptyYard" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+              <div><div class="glyph">⌁</div><p>Run a scenario below to populate the yard. Each car is one EV; the bar along the top is the zone's transformer.</p></div>
+            </div>
+            <div class="inspector" id="inspector">
+              <div class="inspector-head">
+                <div><div class="id" id="iId">—</div></div>
+                <button class="inspector-close" onclick="closeInspector()">✕</button>
+              </div>
+              <div class="inspector-body">
+                <div class="insp-row"><div class="k">Action</div><div class="v" id="iTag">—</div></div>
+                <div class="insp-row"><div class="k">SOC / required</div><div class="v num" id="iSoc">—</div></div>
+                <div class="insp-row"><div class="k">Departure in</div><div class="v num" id="iDeparture">—</div></div>
+                <div class="insp-row"><div class="k">Flexibility category</div><div class="v num" id="iCategory">—</div></div>
+                <div class="insp-row"><div class="k">Power contribution</div><div class="v num" id="iMag">—</div></div>
+                <div class="insp-row"><div class="k">Owner reward</div><div class="v num" id="iPayout">—</div></div>
+                <div class="insp-row"><div class="k">Reason</div><div class="insp-reason" id="iReason">—</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--copper);"></div>Discharge (V2G)</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--verdigris);"></div>Pause / reduce</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--brass);"></div>Solar-align</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--sage);"></div>Protected</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--idle);"></div>No action</div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div class="card-title">Dispatch decision <span class="count" id="decisionCount"></span></div>
+          </div>
+          <div class="filters" id="filters" style="display:flex;gap:5px;padding:9px 16px;flex-wrap:wrap;border-bottom:1px solid var(--line);"></div>
+          <div id="decisionList" style="max-height:420px;overflow-y:auto;"></div>
+        </section>
+
+      </div>
+
+      <!-- ============ RIGHT: fleet overview + rewards + timeline ============ -->
+      <div class="stack">
+
+        <section class="card">
+          <div class="card-head"><div class="card-title">Fleet overview</div></div>
+          <div class="card-body">
+            <div class="fleet-cards" id="fleetCards"></div>
+            <div style="margin-top:var(--sp-4);">
+              <div class="card-title" style="margin-bottom:8px;">Flexibility distribution</div>
+              <div id="flexChart"></div>
+            </div>
+            <div style="margin-top:var(--sp-4);">
+              <div class="card-title" style="margin-bottom:8px;">SOC distribution</div>
+              <div id="socChart"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><div class="card-title">Rewards &amp; incentives</div></div>
+          <div class="card-body">
+            <div class="reward-grid" id="rewardGrid"></div>
+            <div class="card-title" style="margin:var(--sp-2) 0 4px;">Recent payouts</div>
+            <div id="recentActivity"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><div class="card-title">Activity timeline <span class="count">this session</span></div></div>
+          <div id="timelineList" style="max-height:260px;overflow-y:auto;"></div>
+        </section>
+
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="controls">
+    <div class="scenario-group">
+      <button class="btn scenario-btn" data-scn="demo"><span class="swatch"></span>Demo — 7PM / 96%</button>
+      <button class="btn scenario-btn" data-scn="depot_delivery"><span class="swatch"></span>Depot — Delivery fleet</button>
+      <button class="btn scenario-btn" data-scn="depot_bus"><span class="swatch"></span>Depot — School bus</button>
+      <button class="btn scenario-btn" data-scn="emergency"><span class="swatch"></span>Emergency / brownout</button>
+    </div>
+    <div class="kw-input">
+      <span>Target kW</span>
+      <input id="targetKw" type="number" value="30" min="1"/>
+    </div>
+    <div class="spacer"></div>
+    <div id="lastRun" class="num" style="font-size:11px;color:var(--ink-faint);"></div>
+  </footer>
+
+</div>
+
+<script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

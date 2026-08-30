@@ -1,0 +1,94 @@
+/* ==========================================================================
+   Operator dashboard — B2B grid-ops view
+   ========================================================================== */
+
+/* ---- hero ---- */
+.hero{display:grid;grid-template-columns:220px 1fr;gap:var(--sp-5);align-items:center;}
+.hero .gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.hero-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:0;border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;}
+.hero-facts .stat{border-right:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft);}
+.hero-status-row{display:flex;align-items:center;gap:10px;margin-bottom:var(--sp-3);flex-wrap:wrap;}
+.hero-status-row .badge{font-size:11.5px;padding:5px 12px;}
+.badge.normal{background:rgba(127,146,112,.14);color:var(--sage);border-color:var(--sage);}
+.badge.watch{background:rgba(181,147,79,.14);color:var(--brass);border-color:var(--brass);}
+.badge.constrained{background:rgba(192,122,72,.14);color:var(--copper);border-color:var(--copper);}
+.badge.critical{background:rgba(168,81,65,.16);color:var(--brick);border-color:var(--brick);}
+.badge.protected{background:rgba(127,146,112,.14);color:var(--sage);border-color:var(--sage);}
+.badge.discharge{background:rgba(192,122,72,.14);color:var(--copper);border-color:var(--copper);}
+.badge.pause_charging,.badge.reduce_rate{background:rgba(111,145,134,.16);color:var(--verdigris);border-color:var(--verdigris);}
+.badge.solar_align{background:rgba(181,147,79,.14);color:var(--brass);border-color:var(--brass);}
+.badge.no_action{background:rgba(87,88,90,.2);color:var(--ink-dim);border-color:var(--idle);}
+.hero-updated{font-size:11px;color:var(--ink-faint);}
+
+/* ---- yard visualization ---- */
+.yard-wrap{position:relative;height:420px;min-height:0;overflow:hidden;background:var(--asphalt);
+  background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.028) 1px, transparent 0);
+  background-size:22px 22px;
+}
+svg.yard{width:100%;height:100%;display:block;}
+.bay-slot rect{fill:none;stroke:var(--line-soft);stroke-width:1;stroke-dasharray:3 3;}
+.cable{fill:none;stroke-width:1.4;}
+.cable.idle{stroke:var(--line);stroke-dasharray:2 3;}
+.cable.flow{stroke-dasharray:4 4;animation:flow .9s linear infinite;}
+@keyframes flow{to{stroke-dashoffset:-16;}}
+.cable.flow-rev{animation-direction:reverse;}
+.car{cursor:pointer;}
+.car .body{fill:var(--panel-2);stroke-width:1.6;}
+.car .cabin{fill:var(--bg-2);}
+.car .wheel{fill:#101011;}
+.car.active .port{animation:portpulse 1.4s ease-in-out infinite;}
+@keyframes portpulse{0%,100%{opacity:1;}50%{opacity:.45;}}
+.car .id-label{font-family:var(--font-mono);font-size:6.6px;fill:var(--ink-dim);text-anchor:middle;}
+.car.selected .body{stroke-width:2.6;}
+.busbar{stroke:var(--copper-dim);stroke-width:5;}
+.busbar-cap{fill:var(--copper-dim);}
+.busbar-label{font-family:var(--font-display);font-size:12px;font-weight:700;fill:var(--ink-dim);
+  letter-spacing:.06em;text-transform:uppercase;}
+
+.inspector{
+  position:absolute;top:0;right:0;bottom:0;width:250px;
+  background:var(--panel);border-left:1px solid var(--line);
+  transform:translateX(100%);transition:transform .18s ease;
+  display:flex;flex-direction:column;z-index:5;
+}
+.inspector.open{transform:translateX(0);}
+.inspector-head{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;}
+.inspector-head .id{font-family:var(--font-display);font-size:26px;font-weight:700;line-height:1;}
+.inspector-close{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;}
+.inspector-close:hover{color:var(--ink);}
+.inspector-body{padding:14px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;}
+.insp-row .k{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin-bottom:4px;}
+.insp-row .v{font-size:14px;}
+.insp-row .v.num{font-size:16px;}
+.insp-reason{font-size:12.5px;line-height:1.55;color:var(--ink-dim);}
+
+.legend{display:flex;gap:13px;flex-wrap:wrap;padding:9px 16px;border-top:1px solid var(--line);flex:none;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--ink-dim);}
+.legend-dot{width:7px;height:7px;border-radius:2px;flex:none;}
+
+/* ---- fleet overview cards ---- */
+.fleet-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;}
+.fleet-cards .stat{background:var(--panel);}
+
+/* ---- rewards ---- */
+.reward-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--sp-3);}
+.reward-grid .stat{background:var(--panel);}
+
+/* ---- scenario controls ---- */
+.scenario-group{display:flex;gap:7px;flex-wrap:wrap;}
+.kw-input{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-dim);}
+.kw-input input{
+  width:60px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);color:var(--ink);
+  font-family:var(--font-mono);font-size:12px;padding:6px 7px;
+}
+.kw-input input:focus{outline:none;border-color:var(--copper);}
+
+@media (max-width: 980px){
+  .grid-2col{grid-template-columns:1fr;}
+  .hero{grid-template-columns:1fr;}
+}
+@media (max-width: 640px){
+  .inspector{width:100%;}
+  header.topbar{flex-direction:column;align-items:flex-start;gap:10px;}
+  .topbar-right{width:100%;justify-content:flex-start;}
+}
