@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GridSwarm — My Vehicle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/owner.css">
+<link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+<div class="owner-shell">
+
+  <header class="owner-header">
+    <div class="brand">
+      <div class="mark"></div>
+      <div class="name" style="font-size:18px;">GridSwarm</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="vehicle-select">
+        <select id="vehicleSelect"></select>
+      </div>
+      <div class="status-pill" style="padding:5px 9px;">
+        <div id="statusDot" class="status-dot"></div>
+        <span id="statusText" style="font-size:10.5px;">…</span>
+      </div>
+    </div>
+  </header>
+
+  <div id="errorBanner" class="error-banner"></div>
+
+  <main class="content">
+
+    <!-- ============ HOME ============ -->
+    <section class="card" id="home">
+      <div class="card-head"><div class="card-title">Your vehicle</div></div>
+      <div class="card-body">
+        <div class="soc-ring-wrap">
+          <div class="soc-ring" id="socRing"></div>
+          <div class="owner-facts" id="ownerFacts"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ACTIVE EVENT (shown only when participating) ============ -->
+    <div class="active-event" id="activeEventCard" style="display:none;">
+      <div class="headline" id="eventHeadline">Grid support active</div>
+      <p id="eventDesc"></p>
+      <div class="countdown num" id="eventCountdown">—:—</div>
+      <div class="sub">remaining</div>
+      <p id="eventOnTrack" style="margin-top:8px;"></p>
+      <div class="event-metric-row">
+        <div class="event-metric"><div class="k">Power</div><div class="v" id="eventPower">—</div></div>
+        <div class="event-metric"><div class="k">Est. reward</div><div class="v" id="eventReward">—</div></div>
+        <div class="event-metric"><div class="k">Mobility</div><div class="v" id="eventProtection">—</div></div>
+      </div>
+    </div>
+
+    <!-- ============ FLEXIBILITY ============ -->
+    <section class="card" id="flexibility">
+      <div class="card-head"><div class="card-title">Flexibility</div></div>
+      <div class="card-body">
+        <div class="eligibility-banner" id="flexBanner"></div>
+        <div class="owner-fact" style="margin-top:12px;"><span class="k">Flexibility category</span><span class="v" id="flexCategory">—</span></div>
+        <div class="owner-fact"><span class="k">Usable headroom</span><span class="v" id="flexScore">—</span></div>
+        <div class="owner-fact"><span class="k">V2G export</span><span class="v" id="v2gStatus">—</span></div>
+      </div>
+    </section>
+
+    <!-- ============ CONSENT ============ -->
+    <section class="card" id="consent">
+      <div class="card-head">
+        <div class="card-title">Your controls</div>
+        <span class="preview-tag">Some preview</span>
+      </div>
+      <div class="card-body" id="consentList"></div>
+    </section>
+
+    <!-- ============ REWARDS ============ -->
+    <section class="card" id="rewards">
+      <div class="card-head"><div class="card-title">Rewards</div></div>
+      <div class="card-body">
+        <div class="reward-hero" id="rewardHero"></div>
+        <div class="card-title" style="margin:14px 0 4px;">Recent events</div>
+        <div id="rewardHistory"></div>
+      </div>
+    </section>
+
+    <!-- ============ NOTIFICATIONS ============ -->
+    <section class="card" id="alerts">
+      <div class="card-head"><div class="card-title">Notifications</div></div>
+      <div id="notifList"></div>
+    </section>
+
+    <div style="text-align:center;">
+      <a href="index.html" class="btn ghost sm">Switch to operator view →</a>
+    </div>
+
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="#home"><span class="ic">⏻</span>Home</a>
+    <a href="#flexibility"><span class="ic">⇄</span>Flex</a>
+    <a href="#rewards"><span class="ic">₹</span>Rewards</a>
+    <a href="#alerts"><span class="ic">●</span>Alerts</a>
+  </nav>
+
+</div>
+
+<script type="module" src="js/owner.js"></script>
+</body>
+</html>
