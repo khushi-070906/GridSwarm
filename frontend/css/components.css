@@ -110,8 +110,13 @@
 /* ---- bar chart (svg, no lib) ---- */
 .bar-chart .bar-row{display:flex;align-items:center;gap:8px;padding:5px 0;}
 .bar-chart .bar-label{width:78px;flex:none;font-size:11px;color:var(--ink-dim);}
-.bar-chart .bar-track{flex:1;height:8px;background:var(--line-soft);border-radius:2px;overflow:hidden;}
-.bar-chart .bar-fill{height:100%;border-radius:2px;}
+.bar-chart .bar-track{display:block;flex:1;height:8px;background:var(--line-soft);border-radius:2px;overflow:hidden;}
+/* .bar-fill must be display:block (or inline-block) — as a plain inline
+   <span> nested inside another non-flex <span>, width/height never apply
+   at all per CSS spec, which was the root cause of "empty" bars: the
+   inline style set the width correctly, the browser just ignored it. */
+.bar-chart .bar-fill{display:block;height:100%;min-width:0;border-radius:2px;transition:width .25s ease;}
+.bar-chart .bar-fill.zero{min-width:2px;background:var(--line) !important;}
 .bar-chart .bar-amt{width:44px;flex:none;text-align:right;font-family:var(--font-mono);font-size:11px;color:var(--ink-dim);}
 
 /* ---- empty / loading / error states ---- */
@@ -154,6 +159,65 @@
 .timeline-row .desc{color:var(--ink-dim);}
 .timeline-row .desc b{color:var(--ink);}
 .timeline-row .result{text-align:right;font-family:var(--font-mono);font-size:11.5px;}
+
+/* ---- EV profile drawer (opened from Dispatch or Vehicles list) ---- */
+.ev-profile-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:59;}
+.ev-profile-scrim.show{display:block;}
+.ev-profile-panel{
+  position:fixed;top:0;right:0;bottom:0;width:380px;max-width:92vw;background:var(--panel);
+  border-left:1px solid var(--line);z-index:60;display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .2s ease;box-shadow:-8px 0 28px rgba(0,0,0,.35);
+}
+.ev-profile-panel.open{transform:translateX(0);}
+.ev-profile-head{padding:16px 18px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;flex:none;}
+.ev-profile-head .id{font-family:var(--font-display);font-size:28px;font-weight:700;line-height:1;}
+.ev-profile-close{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:17px;padding:2px 4px;}
+.ev-profile-close:hover{color:var(--ink);}
+.ev-profile-body{padding:16px 18px 24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;}
+.ev-profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;}
+.ev-profile-field .k{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-faint);margin-bottom:3px;}
+.ev-profile-field .v{font-size:13.5px;color:var(--ink);}
+.ev-profile-field .v.num{font-family:var(--font-mono);}
+.ev-profile-reason{font-size:12.5px;line-height:1.55;color:var(--ink-dim);background:var(--panel-2);
+  border:1px solid var(--line-soft);border-radius:var(--radius);padding:10px 12px;}
+
+/* ---- lightweight CSS-3D vehicle visual ----
+   Pure CSS transforms — no 3D library. Zero extra network dependency,
+   always renders (no async model load to fail), and reads as a technical
+   blueprint diagram rather than a game asset, matching the rest of the
+   control-room aesthetic. Falls back to a flat schematic (see
+   .ev3d-fallback) if the browser lacks 3D transform support. */
+.ev3d-stage{
+  height:172px;border-radius:var(--radius-lg);border:1px solid var(--line);
+  background:var(--asphalt);background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.03) 1px, transparent 0);
+  background-size:18px 18px;display:flex;align-items:center;justify-content:center;overflow:hidden;perspective:900px;
+}
+.ev3d-car{
+  position:relative;width:128px;height:56px;transform-style:preserve-3d;
+  transform:rotateX(-20deg) rotateY(-34deg);
+  animation:ev3d-spin 16s linear infinite;
+}
+@keyframes ev3d-spin{
+  0%{transform:rotateX(-20deg) rotateY(-34deg);}
+  50%{transform:rotateX(-20deg) rotateY(34deg);}
+  100%{transform:rotateX(-20deg) rotateY(-34deg);}
+}
+.ev3d-face{position:absolute;border:1.4px solid var(--ev3d-color, var(--copper));background:rgba(192,122,72,.06);}
+.ev3d-face.top{width:128px;height:52px;transform:rotateX(90deg) translateZ(14px);border-radius:6px;}
+.ev3d-face.bottom{width:128px;height:52px;transform:rotateX(90deg) translateZ(-14px);opacity:.35;border-radius:6px;}
+.ev3d-face.front{width:128px;height:28px;transform:rotateX(0deg) translateZ(26px) translateY(12px);border-radius:3px;}
+.ev3d-face.back{width:128px;height:28px;transform:rotateX(0deg) translateZ(-26px) translateY(12px) rotateY(180deg);opacity:.7;}
+.ev3d-face.left{width:52px;height:28px;transform:rotateY(-90deg) translateZ(64px) translateY(12px);border-radius:3px;}
+.ev3d-face.right{width:52px;height:28px;transform:rotateY(90deg) translateZ(64px) translateY(12px);border-radius:3px;}
+.ev3d-port{
+  position:absolute;width:8px;height:8px;border-radius:50%;background:var(--ev3d-color, var(--copper));
+  transform:translateZ(27px) translate(-4px,26px);box-shadow:0 0 6px var(--ev3d-color, var(--copper));
+}
+.ev3d-car.active .ev3d-port{animation:portpulse 1.3s ease-in-out infinite;}
+.ev3d-label{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-family:var(--font-mono);
+  font-size:9.5px;color:var(--ink-faint);letter-spacing:.05em;}
+.ev3d-fallback{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--ink-faint);}
+.ev3d-fallback svg{opacity:.8;}
 
 /* ---- misc ---- */
 .divider{height:1px;background:var(--line);border:none;margin:0;}

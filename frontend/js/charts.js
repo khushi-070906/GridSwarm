@@ -48,17 +48,24 @@ export function renderSocRing(container, socPercent) {
   container.appendChild(label);
 }
 
-/** Horizontal bar chart. `rows` = [{label, value, color}]. */
+/** Horizontal bar chart. `rows` = [{label, value, color}].
+    Normalization: width is value/max of the current row set, so bars
+    always fill relative to whatever the largest live value is (no
+    hardcoded scale). A true zero renders as a thin, distinctly-colored
+    sliver rather than nothing, so "0" reads differently from "no data". */
 export function renderBarChart(container, rows, unit = '') {
   container.innerHTML = '';
+  if (!rows.length) return;
   const wrap = el('div', { class: 'bar-chart' });
-  const max = Math.max(1, ...rows.map(r => r.value));
+  const max = Math.max(1, ...rows.map(r => r.value || 0));
   rows.forEach(r => {
+    const v = r.value || 0;
+    const pct = Math.max(0, Math.min(100, (v / max) * 100));
     const row = el('div', { class: 'bar-row' });
     row.innerHTML = `
       <span class="bar-label">${r.label}</span>
-      <span class="bar-track"><span class="bar-fill" style="width:${(r.value / max * 100).toFixed(0)}%;background:${r.color || 'var(--copper)'}"></span></span>
-      <span class="bar-amt">${r.value}${unit}</span>
+      <span class="bar-track"><span class="bar-fill${v === 0 ? ' zero' : ''}" style="width:${pct.toFixed(1)}%;background:${r.color || 'var(--copper)'}"></span></span>
+      <span class="bar-amt">${v}${unit}</span>
     `;
     wrap.appendChild(row);
   });
