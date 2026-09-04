@@ -47,6 +47,84 @@ footer.controls{
 }
 .spacer{flex:1;}
 
+/* ==========================================================================
+   Operator app shell — persistent sidebar + view switcher.
+   Replaces the old single-page topbar layout on index.html; owner.html
+   keeps its own .owner-shell below, untouched.
+   ========================================================================== */
+
+.app-shell{display:grid;grid-template-columns:244px 1fr;min-height:100vh;}
+
+/* ---- sidebar (desktop) ---- */
+.sidebar{
+  background:var(--bg-2);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;
+}
+.sidebar-brand{display:flex;align-items:center;gap:11px;padding:18px 18px 16px;}
+.sidebar-brand .name{font-family:var(--font-display);font-weight:700;font-size:20px;line-height:1;}
+.sidebar-brand .tag{display:block;font-size:9.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.1em;margin-top:2px;}
+
+.sidebar-nav{flex:1;padding:6px 10px;}
+.nav-group{margin-bottom:14px;}
+.nav-group-title{padding:8px 10px 4px;font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);}
+.nav-link{
+  display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius);
+  font-size:13px;color:var(--ink-dim);cursor:pointer;border-left:2px solid transparent;
+}
+.nav-link:hover{background:var(--panel-2);color:var(--ink);}
+.nav-link.active{background:var(--panel);color:var(--ink);border-left-color:var(--copper);font-weight:600;}
+.nav-link .ic{width:14px;text-align:center;flex:none;color:var(--ink-faint);font-family:var(--font-mono);font-size:12px;}
+.nav-link.active .ic{color:var(--copper);}
+
+.sidebar-footer{border-top:1px solid var(--line);padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
+.sidebar-status{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-dim);font-weight:600;letter-spacing:.03em;}
+.sidebar-zone{font-size:10.5px;color:var(--ink-faint);font-family:var(--font-mono);letter-spacing:.04em;}
+.sidebar-settings-btn{
+  background:none;border:1px solid var(--line);color:var(--ink-faint);border-radius:var(--radius);
+  padding:5px 8px;font-size:10.5px;cursor:pointer;text-align:left;
+}
+.sidebar-settings-btn:hover{color:var(--ink-dim);border-color:var(--ink-faint);}
+
+/* ---- mobile topbar + drawer ---- */
+.topbar-mobile{
+  display:none;align-items:center;justify-content:space-between;gap:10px;
+  padding:13px 16px;border-bottom:1px solid var(--line);background:var(--bg-2);
+  position:sticky;top:0;z-index:25;
+}
+.hamburger{background:none;border:1px solid var(--line);border-radius:var(--radius);color:var(--ink-dim);
+  padding:7px 10px;font-size:14px;cursor:pointer;}
+.drawer-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:39;}
+.drawer-scrim.show{display:block;}
+
+.main-col{display:flex;flex-direction:column;min-height:100vh;min-width:0;}
+.view{display:none;flex-direction:column;gap:var(--sp-5);}
+.view.active{display:flex;}
+
+.view-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.view-head .text-body{margin-top:2px;}
+
+/* ---- settings popover ---- */
+.settings-pop{
+  position:absolute;bottom:52px;left:10px;width:210px;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--radius-lg);box-shadow:0 8px 24px rgba(0,0,0,.4);padding:12px;display:none;z-index:50;
+}
+.settings-pop.show{display:block;}
+.settings-pop label{font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px;}
+.settings-pop input{
+  width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);color:var(--ink);
+  font-family:var(--font-mono);font-size:11px;padding:6px 8px;margin-bottom:8px;
+}
+
+@media (max-width: 900px){
+  .app-shell{grid-template-columns:1fr;}
+  .sidebar{
+    position:fixed;left:0;top:0;bottom:0;width:246px;z-index:40;
+    transform:translateX(-100%);transition:transform .2s ease;
+  }
+  .sidebar.open{transform:translateX(0);}
+  .topbar-mobile{display:flex;}
+}
+
 /* ---- owner shell (mobile-first, centered phone-width column) ---- */
 .owner-shell{max-width:460px;margin:0 auto;padding:0 0 40px;min-height:100vh;background:var(--bg);}
 .owner-shell main.content{padding:var(--sp-4);gap:var(--sp-4);max-width:none;}
