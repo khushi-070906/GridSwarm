@@ -65,53 +65,111 @@
 }
 .ev-modal-body{padding:0 16px 4px;}
 
-/* ---- CSS-3D vehicle visualization ---- */
+/* ---- CSS-3D vehicle visualization ----
+   A technical EV silhouette (not a specific make/model), built from two
+   stacked "boxes" — body and cabin — each assembled from named faces:
+   two long side panels, a front cap, a rear cap, a roof, and (body only)
+   a floor. Wheels are two-layer discs (tire + inset hub, offset in Z) so
+   they read as cylinders rather than flat circles. Slow single-axis (Y)
+   rotation, same as before — only the model itself is more complete now. */
 .veh3d-wrap{
   display:flex;align-items:center;justify-content:center;
-  padding:20px 0 6px;background:var(--panel-2);border-bottom:1px solid var(--line);
+  padding:22px 0 8px;background:var(--panel-2);border-bottom:1px solid var(--line);
 }
-.veh3d{width:150px;height:120px;perspective:480px;}
+.veh3d{position:relative;width:206px;height:156px;perspective:560px;}
 .veh3d-stage{
-  position:relative;width:100%;height:100%;transform-style:preserve-3d;
-  animation:veh3d-spin 10s linear infinite;
-  transform:rotateX(-18deg);
+  position:absolute;inset:0;transform-style:preserve-3d;
+  animation:veh3d-spin 12s linear infinite;
+  transform:rotateX(-16deg);
 }
 @keyframes veh3d-spin{
-  from{transform:rotateX(-18deg) rotateY(0deg);}
-  to{transform:rotateX(-18deg) rotateY(360deg);}
+  from{transform:rotateX(-16deg) rotateY(0deg);}
+  to{transform:rotateX(-16deg) rotateY(360deg);}
 }
+
+/* -- body & cabin groups -- */
 .veh3d-body,.veh3d-cabin{position:absolute;transform-style:preserve-3d;left:50%;top:50%;}
-.veh3d-body{width:96px;height:34px;margin:-17px 0 0 -48px;transform:translateZ(0) translateY(14px);}
-.veh3d-cabin{width:52px;height:26px;margin:-13px 0 0 -26px;transform:translateY(-14px) translateX(4px);}
+.veh3d-body{width:112px;height:40px;margin:-20px 0 0 -56px;transform:translateY(16px);}
+.veh3d-cabin{width:60px;height:30px;margin:-15px 0 0 -30px;transform:translate3d(5px,-16px,0);}
+
 .veh3d-body .face,.veh3d-cabin .face{
   position:absolute;inset:0;background:var(--veh-color, var(--copper));
-  border:1px solid rgba(0,0,0,.35);opacity:.92;
+  border:1px solid rgba(0,0,0,.4);opacity:.94;
 }
-.veh3d-body .face.front{transform:rotateY(0deg) translateZ(21px);}
-.veh3d-body .face.back{transform:rotateY(180deg) translateZ(21px);}
-.veh3d-body .face.left{width:42px;transform:rotateY(-90deg) translateZ(48px);left:27px;}
-.veh3d-body .face.right{width:42px;transform:rotateY(90deg) translateZ(48px);left:27px;}
-.veh3d-body .face.top{height:42px;transform:rotateX(90deg) translateZ(17px);top:-4px;filter:brightness(1.18);}
-.veh3d-body .face.bottom{height:42px;transform:rotateX(-90deg) translateZ(17px);top:-4px;filter:brightness(.6);}
-.veh3d-cabin .face.front{transform:rotateY(0deg) translateZ(13px);}
-.veh3d-cabin .face.back{transform:rotateY(180deg) translateZ(13px);}
-.veh3d-cabin .face.left{width:26px;transform:rotateY(-90deg) translateZ(26px);left:13px;}
-.veh3d-cabin .face.right{width:26px;transform:rotateY(90deg) translateZ(26px);left:13px;}
-.veh3d-cabin .face.top{height:26px;transform:rotateX(90deg) translateZ(13px);top:0;filter:brightness(1.3);}
-.veh3d-wheel{
-  position:absolute;width:12px;height:12px;border-radius:50%;background:#101011;
-  border:1px solid #000;top:50%;left:50%;transform-style:preserve-3d;
+/* body: long side panels */
+.veh3d-body .face.side-a{transform:translateZ(24px);}
+.veh3d-body .face.side-b{transform:rotateY(180deg) translateZ(24px);}
+/* body: front / rear caps (bumpers) — headlights/taillights via pseudo-elements */
+.veh3d-body .face.cap-front{width:48px;left:32px;transform:rotateY(90deg) translateZ(56px);border-radius:3px 0 0 3px;}
+.veh3d-body .face.cap-rear{width:48px;left:32px;transform:rotateY(-90deg) translateZ(56px);}
+.veh3d-body .face.cap-front::before,.veh3d-body .face.cap-front::after{
+  content:'';position:absolute;top:9px;width:9px;height:5px;border-radius:2px;
+  background:#eeeadf;box-shadow:0 0 4px rgba(238,234,223,.55);
 }
-.veh3d-wheel.fl{transform:translate3d(-34px,10px,26px);}
-.veh3d-wheel.fr{transform:translate3d(-34px,10px,-26px);}
-.veh3d-wheel.bl{transform:translate3d(28px,10px,26px);}
-.veh3d-wheel.br{transform:translate3d(28px,10px,-26px);}
+.veh3d-body .face.cap-front::before{left:6px;}
+.veh3d-body .face.cap-front::after{right:6px;}
+.veh3d-body .face.cap-rear::before,.veh3d-body .face.cap-rear::after{
+  content:'';position:absolute;top:10px;width:7px;height:4px;border-radius:1px;
+  background:var(--brick);opacity:.6;
+}
+.veh3d-body .face.cap-rear::before{left:7px;}
+.veh3d-body .face.cap-rear::after{right:7px;}
+/* body: roof/floor (plan view) */
+.veh3d-body .face.top{height:48px;top:-4px;transform:rotateX(90deg) translateZ(20px);filter:brightness(1.16);}
+.veh3d-body .face.bottom{height:48px;top:-4px;transform:rotateX(-90deg) translateZ(20px);filter:brightness(.58);}
+
+/* cabin: roof solid, everything else glass */
+.veh3d-cabin .face.roof{transform:rotateX(90deg) translateZ(15px);filter:brightness(1.3);}
+.veh3d-cabin .face.side-a{transform:translateZ(17px);}
+.veh3d-cabin .face.side-b{transform:rotateY(180deg) translateZ(17px);}
+.veh3d-cabin .face.cap-front{width:34px;left:13px;transform:rotateY(90deg) translateZ(30px);}
+.veh3d-cabin .face.cap-rear{width:34px;left:13px;transform:rotateY(-90deg) translateZ(30px);}
+.veh3d-cabin .face.glass{
+  background:linear-gradient(180deg, rgba(154,151,143,.32), rgba(26,27,28,.62));
+  border-color:rgba(234,231,224,.18);opacity:1;
+}
+
+/* -- chassis strip + charging port -- */
+.veh3d-chassis{
+  position:absolute;top:50%;left:50%;width:84px;height:6px;margin:-3px 0 0 -42px;
+  transform:translateY(38px);background:#101011;border-radius:2px;
+}
+.veh3d-port{
+  position:absolute;top:50%;left:50%;width:10px;height:10px;margin:-5px 0 0 -5px;
+  transform:translate3d(40px,20px,25px);border:1.4px solid var(--veh-color, var(--copper));
+  border-radius:2px;background:rgba(0,0,0,.35);
+}
+.veh3d-port .dot{position:absolute;inset:2px;border-radius:50%;background:var(--veh-color, var(--copper));}
+.veh3d-stage.active .veh3d-port .dot{animation:portpulse 1.3s ease-in-out infinite;}
+
+/* -- wheels: tire + inset hub (offset in Z) so they read as cylinders -- */
+.veh3d-wheel{position:absolute;width:17px;height:17px;top:50%;left:50%;transform-style:preserve-3d;}
+.veh3d-wheel .tire{position:absolute;inset:0;border-radius:50%;background:#0d0e0e;border:1px solid #000;}
+.veh3d-wheel .hub{
+  position:absolute;inset:4px;border-radius:50%;background:#404142;
+  transform:translateZ(2.5px);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);
+}
+.veh3d-wheel.fl{transform:translate3d(-40px,12px,31px);}
+.veh3d-wheel.fr{transform:translate3d(-40px,12px,-31px);}
+.veh3d-wheel.bl{transform:translate3d(33px,12px,31px);}
+.veh3d-wheel.br{transform:translate3d(33px,12px,-31px);}
+
+/* -- static ground shadow (sibling of .veh3d-stage — does not rotate) -- */
+.veh3d-ground{
+  position:absolute;left:50%;bottom:10px;width:132px;height:20px;transform:translateX(-50%);
+  background:radial-gradient(ellipse at center, rgba(0,0,0,.42) 0%, rgba(0,0,0,0) 72%);
+  filter:blur(1px);pointer-events:none;
+}
+
 .veh3d-fallback{
   padding:14px;color:var(--ink-faint);font-size:11.5px;text-align:center;
 }
 
 @media (prefers-reduced-motion: reduce){
   .veh3d-stage{animation:none;}
+}
+@media (max-width: 380px){
+  .veh3d{transform:scale(.86);}
 }
 
 /* ---- responsive: collapsible drawer sidebar ---- */

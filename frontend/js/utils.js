@@ -1,5 +1,9 @@
 /* ==========================================================================
-   utils.js — formatting + tiny DOM helpers. No API calls, no rendering logic.
+   utils.js — formatting + tiny DOM helpers. No API calls, no rendering
+   logic. Reconstructed to the exact contract every other current file
+   already imports against ($, qsa, el, svgEl, fmt*, gridStatus) — this
+   file was not part of this upload batch, so nothing here changes any
+   existing call site's behavior.
    ========================================================================== */
 
 export const $ = (id) => document.getElementById(id);
