@@ -1,22 +1,17 @@
 /* ==========================================================================
-   activity.js — Activity / Event History view.
-   The backend has no persisted "event log" endpoint (only per-EV ledger
-   totals), so this timeline is built client-side from each scenario run
-   within the session — clearly a UI concept layered on real DispatchPlan
-   responses, not fabricated data.
+   activity.js — "Activity" view: the in-session scenario-run timeline.
    ========================================================================== */
 import { $, el, fmtKw, fmtInr, fmtPct } from './utils.js';
 import { emptyState } from './components.js';
-import { registerView } from './navigation.js';
 
-export function render(store) {
-  const list = $('activityList');
-  if (!store.timeline.length) {
-    emptyState(list, '▤', 'Run a scenario to see events appear here.');
+export function renderTimeline(timelineHistory) {
+  const list = $('timelineList');
+  if (!timelineHistory.length) {
+    emptyState(list, '—', 'Run a scenario to see events appear here.');
     return;
   }
   list.innerHTML = '';
-  store.timeline.forEach(h => {
+  timelineHistory.forEach(h => {
     const row = el('div', { class: 'timeline-row' });
     row.innerHTML = `
       <span class="t">${h.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -26,5 +21,3 @@ export function render(store) {
     list.appendChild(row);
   });
 }
-
-registerView('activity', render);

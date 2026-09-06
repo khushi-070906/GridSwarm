@@ -1,104 +1,100 @@
 /* ==========================================================================
-   ev-profile.js — the slide-in EV profile opened by clicking a dispatch
-   decision (from the yard, the Dispatch list, or the Vehicles table).
-   Renders the vehicle's stats plus a lightweight CSS-3D visualization; if
-   the browser can't do 3D transforms the profile still works and falls
-   back to a flat schematic.
+   ev-profile.js — the EV profile modal. Opened from either the depot yard
+   (fleet.js) or the dispatch decision list (dispatch.js). Renders the same
+   ev_context fields the old inline inspector showed, plus a lightweight
+   CSS-3D vehicle (no external 3D library — just perspective/transform-3d,
+   consistent with the rest of the project's hand-rolled-SVG approach).
    ========================================================================== */
-import { $, el, fmtKw, fmtInr, fmtMinutes } from './utils.js';
-import { ACTION_META } from './state.js';
+import { $, fmtKw, fmtInr, fmtMinutes } from './utils.js';
+import { badge } from './components.js';
+import * as state from './state.js';
 
-function supports3d() {
-  try {
-    return CSS && CSS.supports && CSS.supports('transform-style', 'preserve-3d') && CSS.supports('perspective', '900px');
-  } catch (e) { return false; }
-}
+let selectedId = null;
+const listeners = [];
 
-function render3dVehicle(container, action) {
-  const meta = ACTION_META[action.action] || ACTION_META.no_action;
-  const active = meta.dir !== null && action.action !== 'protected';
-  container.innerHTML = '';
+export function getSelectedId() { return selectedId; }
 
-  if (!supports3d()) {
-    container.innerHTML = `
-      <div class="ev3d-fallback">
-        <svg width="72" height="40" viewBox="0 0 72 40" fill="none">
-          <rect x="4" y="14" width="64" height="18" rx="4" stroke="${meta.color}" stroke-width="1.5"/>
-          <rect x="16" y="6" width="40" height="12" rx="3" stroke="${meta.color}" stroke-width="1.5"/>
-          <circle cx="18" cy="34" r="4" fill="#101011"/>
-          <circle cx="54" cy="34" r="4" fill="#101011"/>
-        </svg>
-        <span class="text-meta">3D view unavailable in this browser — schematic shown instead</span>
-      </div>
-    `;
-    return;
-  }
-
-  try {
-    const car = el('div', { class: 'ev3d-car' + (active ? ' active' : ''), style: `--ev3d-color:${meta.color}` });
-    ['top', 'bottom', 'front', 'back', 'left', 'right'].forEach(face => {
-      car.appendChild(el('div', { class: `ev3d-face ${face}` }));
-    });
-    car.appendChild(el('div', { class: 'ev3d-port' }));
-    container.appendChild(car);
-    const label = el('div', { class: 'ev3d-label' });
-    label.textContent = `${action.ev_id} · ${meta.label}`;
-    container.appendChild(label);
-  } catch (e) {
-    // Any unexpected rendering failure — degrade to the same schematic
-    // fallback rather than leaving a blank panel.
-    container.innerHTML = `<div class="ev3d-fallback"><span class="text-meta">Vehicle visual unavailable.</span></div>`;
-  }
-}
-
-function field(k, v) {
-  const f = el('div', { class: 'ev-profile-field' });
-  f.innerHTML = `<div class="k">${k}</div><div class="v num">${v}</div>`;
-  return f;
-}
+/** Register a callback fired with the new selectedId whenever selection changes.
+    Used by fleet.js to keep the yard's "selected" highlight in sync. */
+export function onSelectionChange(cb) { listeners.push(cb); }
 
 export function openEvProfile(action) {
-  const ctx = action.ev_context;
-  const meta = ACTION_META[action.action] || ACTION_META.no_action;
-
-  $('evProfileId').textContent = action.ev_id;
-  $('evProfileBadge').innerHTML = '';
-  const b = el('span', { class: `badge ${action.action}` });
-  b.textContent = meta.label;
-  $('evProfileBadge').appendChild(b);
-
-  render3dVehicle($('ev3dStage'), action);
-
-  const grid = $('evProfileGrid');
-  grid.innerHTML = '';
-  if (ctx) {
-    grid.appendChild(field('SOC', `${ctx.soc_percent.toFixed(0)}%`));
-    grid.appendChild(field('Required SOC', `${ctx.required_soc_percent.toFixed(0)}%`));
-    grid.appendChild(field('Departure', `in ${fmtMinutes(ctx.departure_minutes)}`));
-    grid.appendChild(field('Battery capacity', `${ctx.battery_kwh.toFixed(0)} kWh`));
-    grid.appendChild(field('Charging state', ctx.currently_charging ? 'Charging' : 'Idle'));
-    grid.appendChild(field('Max charge power', fmtKw(ctx.max_charge_kw)));
-    grid.appendChild(field('Max discharge power', fmtKw(ctx.max_discharge_kw)));
-    grid.appendChild(field('V2G opted in', ctx.opted_in_v2g ? 'Yes' : 'No'));
-    grid.appendChild(field('Flexibility category', ctx.flexibility_category.toUpperCase()));
-    grid.appendChild(field('Flexibility score', `${ctx.flexibility_score_kwh.toFixed(1)} kWh`));
-  }
-  grid.appendChild(field('Dispatch action', meta.label));
-  grid.appendChild(field('Power / reduction', action.magnitude_kw != null ? fmtKw(action.magnitude_kw) : '—'));
-  grid.appendChild(field('Expected reward', fmtInr(action.payout_inr)));
-
-  $('evProfileReason').textContent = action.reason || '—';
-
-  $('evProfilePanel').classList.add('open');
-  $('evProfileScrim').classList.add('show');
+  selectedId = action.ev_id;
+  listeners.forEach(cb => cb(selectedId));
+  populate(action);
+  $('evModalOverlay').classList.add('open');
 }
 
 export function closeEvProfile() {
-  $('evProfilePanel')?.classList.remove('open');
-  $('evProfileScrim')?.classList.remove('show');
+  $('evModalOverlay')?.classList.remove('open');
+  selectedId = null;
+  listeners.forEach(cb => cb(selectedId));
 }
 
-export function initEvProfile() {
-  $('evProfileClose')?.addEventListener('click', closeEvProfile);
-  $('evProfileScrim')?.addEventListener('click', closeEvProfile);
+export function initEvProfileModal() {
+  $('pClose')?.addEventListener('click', closeEvProfile);
+  $('evModalOverlay')?.addEventListener('click', (e) => {
+    if (e.target.id === 'evModalOverlay') closeEvProfile();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeEvProfile();
+  });
+}
+
+function populate(a) {
+  const meta = state.ACTION_META[a.action] || state.ACTION_META.no_action;
+  const ctx = a.ev_context;
+
+  $('pId').textContent = a.ev_id;
+  $('pTag').innerHTML = '';
+  $('pTag').appendChild(badge(meta.label, a.action));
+
+  $('pSoc').textContent = ctx ? `${ctx.soc_percent.toFixed(0)}% (needs ${ctx.required_soc_percent.toFixed(0)}%)` : '—';
+  $('pDeparture').textContent = ctx ? fmtMinutes(ctx.departure_minutes) : '—';
+  $('pBattery').textContent = ctx ? `${ctx.battery_kwh} kWh` : '—';
+  $('pCharging').textContent = ctx
+    ? (ctx.currently_charging ? `Charging (up to ${fmtKw(ctx.max_charge_kw)})` : 'Idle / plugged in')
+    : '—';
+  $('pMaxCharge').textContent = ctx ? fmtKw(ctx.max_charge_kw) : '—';
+  $('pV2g').textContent = ctx
+    ? ((ctx.opted_in_v2g && ctx.max_discharge_kw > 0) ? `Eligible (${fmtKw(ctx.max_discharge_kw)} max)` : 'Not eligible')
+    : '—';
+  $('pCategory').textContent = ctx ? ctx.flexibility_category.toUpperCase() : '—';
+  $('pMag').textContent = a.magnitude_kw != null ? fmtKw(a.magnitude_kw) : '—';
+  $('pPayout').textContent = fmtInr(a.payout_inr);
+  $('pReason').textContent = a.reason || '—';
+
+  const stage = $('pVehicle3d');
+  try {
+    renderVehicle3D(stage, a.action);
+  } catch (err) {
+    stage.innerHTML = '<div class="veh3d-fallback">Vehicle view unavailable — profile data above is unaffected.</div>';
+  }
+}
+
+/** Lightweight CSS-3D car: two boxes (body + cabin) built from six/five
+    div "faces" each, positioned with translateZ/rotateY, slowly spun via
+    a CSS animation. No canvas/WebGL/three.js — degrades gracefully to a
+    static shape if 3D transforms aren't supported, and never blocks the
+    rest of the profile from rendering. */
+function renderVehicle3D(container, actionKey) {
+  const meta = state.ACTION_META[actionKey] || state.ACTION_META.no_action;
+  container.innerHTML = `
+    <div class="veh3d">
+      <div class="veh3d-stage" style="--veh-color:${meta.color}">
+        <div class="veh3d-body">
+          <div class="face top"></div><div class="face bottom"></div>
+          <div class="face front"></div><div class="face back"></div>
+          <div class="face left"></div><div class="face right"></div>
+        </div>
+        <div class="veh3d-cabin">
+          <div class="face top"></div>
+          <div class="face front"></div><div class="face back"></div>
+          <div class="face left"></div><div class="face right"></div>
+        </div>
+        <div class="veh3d-wheel fl"></div><div class="veh3d-wheel fr"></div>
+        <div class="veh3d-wheel bl"></div><div class="veh3d-wheel br"></div>
+      </div>
+    </div>
+  `;
 }

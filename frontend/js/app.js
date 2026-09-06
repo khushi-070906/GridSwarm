@@ -1,142 +1,108 @@
 /* ==========================================================================
-   app.js — root controller. Owns the one shared copy of backend data
-   (current DispatchPlan, ledger, session timeline) and the scenario
-   runner. Every view module reads from `store` and calls `subscribe()`
-   to re-render when new data arrives, instead of each view fetching and
-   duplicating API calls on its own.
+   app.js — bootstrap + orchestration. Flow is unchanged from before:
+   API -> api.js -> state.js (transform) -> view modules (render) -> DOM.
+   This file just wires the scenario runner to every view's render
+   function and owns the few pieces of state shared across views
+   (current plan, run history, last scenario meta).
    ========================================================================== */
 import * as api from './api.js';
 import * as state from './state.js';
-import { $, fmtTime } from './utils.js';
+import { $, qsa, fmtTime } from './utils.js';
+import { initNavigation } from './navigation.js';
+import { initEvProfileModal } from './ev-profile.js';
+import { renderCommandCenter } from './dashboard.js';
+import { renderFleetOverview, renderVehicles } from './fleet.js';
+import { renderGridEvents, renderGridResponse } from './grid.js';
+import { initDispatchFilters, renderDispatch } from './dispatch.js';
+import { renderRewards } from './rewards.js';
+import { renderTimeline } from './activity.js';
 
-export const store = {
-  plan: null,
-  lastScenarioMeta: null,   // { label, targetKw }
-  ledgerTotals: {},
-  ledgerEntries: [],
-  timeline: [],
-  fleetDemo: [],
-  backendLive: false,
-};
-
-const listeners = [];
-export function subscribe(fn) { listeners.push(fn); }
-function publish() { listeners.forEach(fn => fn(store)); }
+let timelineHistory = [];
+let lastScenarioMeta = null; // { label, targetKw }
 
 /* ---------------------------------------------------------------------- */
-/* backend base URL — configurable via a settings popover, never shown    */
-/* as raw text in the main UI per the "no localhost in the header" rule.  */
+/* health                                                                  */
 /* ---------------------------------------------------------------------- */
 
-export function initSettings() {
-  const input = $('apiBaseInput');
-  const btn = $('settingsBtn');
-  const pop = $('settingsPop');
-  if (input) input.value = api.getApiBase();
-  if (btn && pop) {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      pop.classList.toggle('show');
-    });
-    document.addEventListener('click', (e) => {
-      if (!pop.contains(e.target) && e.target !== btn) pop.classList.remove('show');
-    });
-  }
-  if (input) {
-    input.addEventListener('change', () => { api.setApiBase(input.value); checkHealth(); });
-  }
-}
-
-export async function checkHealth() {
+async function checkHealth() {
   try {
     await api.health();
-    store.backendLive = true;
-    setStatusIndicators(true);
+    $('statusDot').className = 'status-dot live';
+    $('statusText').textContent = 'System live';
+    hideError();
     return true;
   } catch (e) {
-    store.backendLive = false;
-    setStatusIndicators(false);
+    $('statusDot').className = 'status-dot down';
+    $('statusText').textContent = 'Backend unreachable';
+    showError('Can\'t reach the GridSwarm backend right now. Start it with "uvicorn app.main:app --port 8000". This page retries automatically.');
     return false;
   }
 }
 
-function setStatusIndicators(live) {
-  document.querySelectorAll('[data-status-dot]').forEach(d => { d.className = 'status-dot ' + (live ? 'live' : 'down'); });
-  document.querySelectorAll('[data-status-text]').forEach(t => { t.textContent = live ? 'System live' : 'Disconnected'; });
-  const banner = $('errorBanner');
-  if (banner) {
-    if (live) { banner.classList.remove('show'); }
-    else {
-      banner.textContent = `Backend unreachable at the configured URL. Start it with "uvicorn app.main:app --port 8000" — this reconnects automatically.`;
-      banner.classList.add('show');
-    }
-  }
+function showError(msg) {
+  const b = $('errorBanner');
+  b.textContent = msg;
+  b.classList.add('show');
 }
+function hideError() { $('errorBanner').classList.remove('show'); }
 
 /* ---------------------------------------------------------------------- */
-/* scenario runner — the one place a new DispatchPlan is requested        */
+/* scenario runner                                                         */
 /* ---------------------------------------------------------------------- */
 
-export const SCENARIOS = {
+const SCENARIOS = {
   demo:           { label: 'Demo — 7PM / 96%',        run: (kw) => api.demoScenario(kw) },
   depot_delivery: { label: 'Depot — Delivery fleet',   run: (kw) => api.depotScenario('delivery', kw) },
   depot_bus:      { label: 'Depot — School bus',       run: (kw) => api.depotScenario('school_bus', kw) },
   emergency:      { label: 'Emergency / brownout',     run: (kw) => api.emergencyScenario(kw) },
 };
 
-export async function runScenario(key, kw) {
+async function runScenario(key) {
+  qsa('.scenario-btn').forEach(b => { b.classList.remove('active'); b.disabled = true; });
+  const btn = document.querySelector(`[data-scn="${key}"]`);
+  if (btn) btn.classList.add('active');
+
+  const kw = parseFloat($('targetKw').value) || 30;
   const scn = SCENARIOS[key];
-  const plan = await scn.run(kw);
-  store.plan = plan;
-  store.lastScenarioMeta = { label: scn.label, targetKw: kw };
-  store.timeline = [state.timelineEntryFromPlan(scn.label, plan), ...store.timeline].slice(0, 20);
   try {
-    const [totals, entries] = await Promise.all([api.ledgerTotals(), api.ledgerEntries()]);
-    store.ledgerTotals = totals;
-    store.ledgerEntries = entries;
-  } catch (e) { /* ledger is best-effort */ }
-  publish();
-  return plan;
+    const plan = await scn.run(kw);
+    hideError();
+    lastScenarioMeta = { label: scn.label, targetKw: kw };
+    timelineHistory.unshift(state.timelineEntryFromPlan(scn.label, plan));
+    timelineHistory = timelineHistory.slice(0, 12);
+    await applyPlan(plan);
+    $('lastRun').textContent = `Last run — ${scn.label} — ${fmtTime()}`;
+  } catch (e) {
+    showError(`Scenario failed: ${e.message}. Is the backend running?`);
+  } finally {
+    qsa('.scenario-btn').forEach(b => b.disabled = false);
+  }
 }
 
-export async function loadFleetDemo() {
-  try {
-    store.fleetDemo = await api.fleetDemo();
-    publish();
-  } catch (e) { /* best-effort, views handle empty fleetDemo gracefully */ }
-}
-
-export async function refreshLedger() {
-  try {
-    const [totals, entries] = await Promise.all([api.ledgerTotals(), api.ledgerEntries()]);
-    store.ledgerTotals = totals;
-    store.ledgerEntries = entries;
-    publish();
-  } catch (e) { /* best-effort */ }
+async function applyPlan(plan) {
+  renderCommandCenter(plan, lastScenarioMeta);
+  renderFleetOverview(plan);
+  renderVehicles(plan.actions);
+  renderGridEvents(plan, lastScenarioMeta);
+  renderGridResponse(plan, lastScenarioMeta);
+  renderDispatch(plan.actions);
+  renderTimeline(timelineHistory);
+  await renderRewards(plan);
 }
 
 /* ---------------------------------------------------------------------- */
-/* persistent scenario control bar (footer) — sitewide, since running a   */
-/* scenario is the one action that drives data across every view          */
+/* init                                                                     */
 /* ---------------------------------------------------------------------- */
 
-export function initScenarioControls(onRun) {
-  document.querySelectorAll('.scenario-btn').forEach(b => {
-    b.addEventListener('click', async () => {
-      document.querySelectorAll('.scenario-btn').forEach(x => { x.classList.remove('active'); x.disabled = true; });
-      b.classList.add('active');
-      const kw = parseFloat($('targetKw').value) || 30;
-      try {
-        await runScenario(b.dataset.scn, kw);
-        $('lastRun').textContent = `Last run — ${store.lastScenarioMeta.label} — ${fmtTime()}`;
-        if (onRun) onRun(store);
-      } catch (e) {
-        const banner = $('errorBanner');
-        banner.textContent = `Scenario failed: ${e.message}`;
-        banner.classList.add('show');
-      } finally {
-        document.querySelectorAll('.scenario-btn').forEach(x => x.disabled = false);
-      }
-    });
-  });
-}
+initNavigation();
+initEvProfileModal();
+initDispatchFilters();
+qsa('.scenario-btn').forEach(b => b.addEventListener('click', () => runScenario(b.dataset.scn)));
+
+(async function init() {
+  const ok = await checkHealth();
+  if (ok) {
+    try { await renderRewards({ actions: [], total_payout_inr: 0 }); } catch (_) { /* best-effort */ }
+  }
+  setInterval(checkHealth, 8000);
+})();

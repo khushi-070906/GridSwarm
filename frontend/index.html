@@ -4,115 +4,122 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>GridSwarm — Grid Operations</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231b1c1c'/%3E%3Cpath d='M6 16h6M20 16h6M16 6v6M16 20v6' stroke='%23c07a48' stroke-width='2.5'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/layout.css">
 <link rel="stylesheet" href="css/components.css">
 <link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
-
-<div class="drawer-scrim" id="drawerScrim"></div>
-
-<div class="app-shell">
+<div class="shell">
 
   <!-- ============ SIDEBAR ============ -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
       <div class="mark"></div>
       <div>
-        <div class="name">GridSwarm</div>
-        <span class="tag">Grid Operations</span>
+        <div class="sidebar-name">GRIDSWARM</div>
+        <div class="sidebar-sub">Grid Operations</div>
       </div>
     </div>
-    <nav class="sidebar-nav" id="sidebarNav"></nav>
-    <div class="sidebar-footer" style="position:relative;">
-      <div class="sidebar-status">
-        <span class="status-dot" data-status-dot></span>
-        <span data-status-text>Checking…</span>
+
+    <nav class="sidebar-nav">
+      <div class="nav-group">
+        <div class="nav-group-label">Overview</div>
+        <a href="#command" class="nav-link" data-view="command">Command Center</a>
       </div>
-      <div class="sidebar-zone">DEPOT-A</div>
-      <button class="sidebar-settings-btn" id="settingsBtn">⚙ Backend settings</button>
-      <div class="settings-pop" id="settingsPop">
-        <label for="apiBaseInput">Backend URL</label>
-        <input id="apiBaseInput" spellcheck="false"/>
-        <div class="text-meta">Advanced/developer setting — most users never need this.</div>
+      <div class="nav-group">
+        <div class="nav-group-label">Fleet</div>
+        <a href="#fleet-overview" class="nav-link" data-view="fleet-overview">Fleet Overview</a>
+        <a href="#fleet-vehicles" class="nav-link" data-view="fleet-vehicles">Vehicles</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Grid</div>
+        <a href="#grid-events" class="nav-link" data-view="grid-events">Grid Events</a>
+        <a href="#grid-response" class="nav-link" data-view="grid-response">Grid Response</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Operations</div>
+        <a href="#dispatch" class="nav-link" data-view="dispatch">Dispatch Decisions</a>
+        <a href="#activity" class="nav-link" data-view="activity">Activity</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Finance</div>
+        <a href="#rewards" class="nav-link" data-view="rewards">Rewards &amp; Incentives</a>
+      </div>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="status-pill">
+        <div id="statusDot" class="status-dot"></div>
+        <span id="statusText">Checking…</span>
       </div>
     </div>
   </aside>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
+  <!-- ============ MAIN COLUMN ============ -->
   <div class="main-col">
 
-    <!-- ============ MOBILE TOPBAR ============ -->
-    <header class="topbar-mobile">
-      <button class="hamburger" id="hamburgerBtn">☰</button>
-      <div class="text-section-title" id="mobileViewTitle">Command Center</div>
-      <div class="status-pill" style="padding:5px 9px;">
-        <span class="status-dot" data-status-dot></span>
-        <span data-status-text style="font-size:10.5px;">…</span>
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="drawer-toggle" id="drawerToggle" aria-label="Toggle menu">☰</button>
+        <div class="topbar-title" id="topbarTitle">Command Center</div>
+      </div>
+      <div class="topbar-right">
+        <div class="mode-switch">
+          <a href="index.html" class="active">Operator</a>
+          <a href="owner.html">EV owner</a>
+        </div>
       </div>
     </header>
 
     <div id="errorBanner" class="error-banner"></div>
 
-    <main class="content" style="max-width:1400px;">
+    <main class="content">
 
-      <!-- ======================================================= -->
-      <!-- COMMAND CENTER                                            -->
-      <!-- ======================================================= -->
-      <section class="view" id="view-command-center">
-        <div class="view-head">
-          <div>
-            <div class="text-page-title">Command Center</div>
-            <div class="text-body">Live grid state and GridSwarm's current response — one screen, no repeated numbers.</div>
-          </div>
-        </div>
-
-        <section class="card" id="ccHero">
-          <div class="card-body">
-            <div id="ccHeroEmpty" class="empty-state" style="display:none;"></div>
-            <div id="ccHeroContent">
-              <div class="hero-status-row" id="ccStatusRow"></div>
-              <div class="hero">
-                <div class="gauge-wrap">
-                  <div id="ccGauge"></div>
-                  <div class="num" id="ccGaugeAfter" style="font-size:12px;color:var(--ink-dim);text-align:center;"></div>
-                </div>
-                <div>
-                  <div class="hero-facts" id="ccFacts"></div>
-                  <div class="hero-updated" id="ccUpdated" style="margin-top:8px;"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
+      <!-- ============ COMMAND CENTER ============ -->
+      <section class="view" data-view="command" id="view-command">
         <section class="card">
-          <div class="card-head"><div class="card-title">GridSwarm's current decision</div></div>
           <div class="card-body">
-            <div class="fleet-cards" id="ccDecisionCards" style="margin-bottom:var(--sp-4);"></div>
-            <div id="ccDecisionSummary"></div>
-            <div style="margin-top:10px;">
-              <a href="#dispatch" class="btn ghost sm" data-nav="dispatch">View full dispatch decision →</a>
+            <div class="hero-status-row" id="heroStatusRow"></div>
+            <div class="hero">
+              <div class="gauge-wrap">
+                <div id="gauge"></div>
+                <div class="num" id="gaugeAfter" style="font-size:12px;color:var(--ink-dim);"></div>
+              </div>
+              <div>
+                <div class="hero-facts" id="heroFacts"></div>
+                <div class="hero-updated" id="heroUpdated" style="margin-top:8px;"></div>
+              </div>
             </div>
           </div>
         </section>
       </section>
 
-      <!-- ======================================================= -->
-      <!-- FLEET OVERVIEW                                            -->
-      <!-- ======================================================= -->
-      <section class="view" id="view-fleet">
-        <div class="view-head">
-          <div>
-            <div class="text-page-title">Fleet Overview</div>
-            <div class="text-body">Fleet health, the depot yard, and how flexibility is distributed across the fleet.</div>
+      <!-- ============ FLEET OVERVIEW ============ -->
+      <section class="view" data-view="fleet-overview" id="view-fleet-overview" hidden>
+        <section class="card">
+          <div class="card-head"><div class="card-title">Fleet overview</div></div>
+          <div class="card-body">
+            <div class="fleet-cards" id="fleetCards"></div>
+            <div style="margin-top:var(--sp-4);">
+              <div class="card-title" style="margin-bottom:8px;">Flexibility distribution</div>
+              <div id="flexChart"></div>
+            </div>
+            <div style="margin-top:var(--sp-4);">
+              <div class="card-title" style="margin-bottom:8px;">SOC distribution</div>
+              <div id="socChart"></div>
+            </div>
           </div>
-        </div>
+        </section>
+      </section>
 
+      <!-- ============ FLEET / VEHICLES (depot yard) ============ -->
+      <section class="view" data-view="fleet-vehicles" id="view-fleet-vehicles" hidden>
         <section class="card">
           <div class="card-head">
             <div class="card-title">Depot yard <span class="count" id="yardCount"></span></div>
@@ -120,7 +127,7 @@
           <div class="yard-wrap" id="yardWrap">
             <svg class="yard" id="yardSvg" viewBox="0 0 900 460" preserveAspectRatio="xMidYMid meet"></svg>
             <div class="empty-state" id="emptyYard" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
-              <div><div class="glyph">⌁</div><p>Run a scenario below to populate the yard. Each car is one EV; the bar along the top is the zone's transformer.</p></div>
+              <div><div class="glyph">⌁</div><p>Run a scenario below to populate the yard. Each car is one EV; the bar along the top is the zone's transformer. Click a vehicle for its profile.</p></div>
             </div>
           </div>
           <div class="legend">
@@ -131,123 +138,54 @@
             <div class="legend-item"><div class="legend-dot" style="background:var(--idle);"></div>No action</div>
           </div>
         </section>
+      </section>
 
+      <!-- ============ GRID EVENTS ============ -->
+      <section class="view" data-view="grid-events" id="view-grid-events" hidden>
         <section class="card">
-          <div class="card-head"><div class="card-title">Fleet health</div></div>
           <div class="card-body">
-            <div class="fleet-cards" id="fleetCards"></div>
-            <div style="margin-top:var(--sp-4);">
-              <div class="text-section-title" style="margin-bottom:8px;">Flexibility distribution</div>
-              <div id="flexChart"></div>
-            </div>
-            <div style="margin-top:var(--sp-4);">
-              <div class="text-section-title" style="margin-bottom:8px;">SOC distribution</div>
-              <div id="socChart"></div>
-            </div>
+            <div class="hero-status-row" id="gridStatusRow"></div>
+            <div class="hero-facts" id="gridFacts"></div>
           </div>
         </section>
       </section>
 
-      <!-- ======================================================= -->
-      <!-- VEHICLES                                                  -->
-      <!-- ======================================================= -->
-      <section class="view" id="view-vehicles">
-        <div class="view-head">
-          <div>
-            <div class="text-page-title">Vehicles</div>
-            <div class="text-body">Every EV in the current dispatch plan. Click a row to open its profile.</div>
-          </div>
-        </div>
+      <!-- ============ GRID RESPONSE ============ -->
+      <section class="view" data-view="grid-response" id="view-grid-response" hidden>
         <section class="card">
-          <div id="vehiclesEmpty" class="empty-state"></div>
-          <div style="max-height:640px;overflow-y:auto;">
-            <table class="vehicle-table" id="vehicleTable" style="display:none;">
-              <thead>
-                <tr>
-                  <th>EV</th><th>SOC</th><th>Required</th><th>Departure</th>
-                  <th>Category</th><th>Action</th><th>Power</th><th>Reward</th>
-                </tr>
-              </thead>
-              <tbody id="vehicleTableBody"></tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
-      <!-- ======================================================= -->
-      <!-- GRID RESPONSE                                             -->
-      <!-- ======================================================= -->
-      <section class="view" id="view-grid">
-        <div class="view-head">
-          <div>
-            <div class="text-page-title">Grid Response</div>
-            <div class="text-body">How the last grid constraint moved through GridSwarm's pipeline, and how well it performed.</div>
-          </div>
-        </div>
-
-        <section class="card">
-          <div class="card-head"><div class="card-title">Response story</div></div>
+          <div class="card-head"><div class="card-title">GridSwarm response</div></div>
           <div class="card-body" style="padding:0;">
-            <div class="flow" id="gridFlow"></div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="card-head"><div class="card-title">Response performance</div></div>
-          <div class="card-body">
-            <div class="fleet-cards" id="gridPerf"></div>
+            <div class="flow" id="responseFlow"></div>
           </div>
         </section>
       </section>
 
-      <!-- ======================================================= -->
-      <!-- DISPATCH                                                  -->
-      <!-- ======================================================= -->
-      <section class="view" id="view-dispatch">
-        <div class="view-head">
-          <div>
-            <div class="text-page-title">Dispatch Decisions</div>
-            <div class="text-body">Which EVs were selected, what action they were given, and why.</div>
-          </div>
-        </div>
+      <!-- ============ DISPATCH DECISIONS ============ -->
+      <section class="view" data-view="dispatch" id="view-dispatch" hidden>
         <section class="card">
           <div class="card-head">
-            <div class="card-title">Decisions <span class="count" id="dispatchCount"></span></div>
+            <div class="card-title">Dispatch decision <span class="count" id="decisionCount"></span></div>
           </div>
-          <div class="filters" id="dispatchFilters" style="display:flex;gap:5px;padding:9px 16px;flex-wrap:wrap;border-bottom:1px solid var(--line);"></div>
-          <div id="dispatchList" style="max-height:640px;overflow-y:auto;"></div>
+          <div class="filters" id="filters" style="display:flex;gap:5px;padding:9px 16px;flex-wrap:wrap;border-bottom:1px solid var(--line);"></div>
+          <div id="decisionList" style="max-height:640px;overflow-y:auto;"></div>
         </section>
       </section>
 
-      <!-- ======================================================= -->
-      <!-- ACTIVITY                                                  -->
-      <!-- ======================================================= -->
-      <section class="view" id="view-activity">
-        <div class="view-head">
-          <div>
-            <div class="text-page-title">Activity</div>
-            <div class="text-body">Timeline of GridSwarm events and actions run this session.</div>
-          </div>
-        </div>
+      <!-- ============ ACTIVITY ============ -->
+      <section class="view" data-view="activity" id="view-activity" hidden>
         <section class="card">
-          <div id="activityList" style="max-height:640px;overflow-y:auto;"></div>
+          <div class="card-head"><div class="card-title">Activity timeline <span class="count">this session</span></div></div>
+          <div id="timelineList" style="max-height:640px;overflow-y:auto;"></div>
         </section>
       </section>
 
-      <!-- ======================================================= -->
-      <!-- REWARDS                                                   -->
-      <!-- ======================================================= -->
-      <section class="view" id="view-rewards">
-        <div class="view-head">
-          <div>
-            <div class="text-page-title">Rewards &amp; Incentives</div>
-            <div class="text-body">What owners earned for the flexibility they gave up.</div>
-          </div>
-        </div>
+      <!-- ============ REWARDS ============ -->
+      <section class="view" data-view="rewards" id="view-rewards" hidden>
         <section class="card">
+          <div class="card-head"><div class="card-title">Rewards &amp; incentives</div></div>
           <div class="card-body">
             <div class="reward-grid" id="rewardGrid"></div>
-            <div class="text-section-title" style="margin:var(--sp-2) 0 4px;">Recent payouts</div>
+            <div class="card-title" style="margin:var(--sp-2) 0 4px;">Recent payouts</div>
             <div id="recentActivity"></div>
           </div>
         </section>
@@ -255,7 +193,6 @@
 
     </main>
 
-    <!-- ============ PERSISTENT SCENARIO CONTROLS ============ -->
     <footer class="controls">
       <div class="scenario-group">
         <button class="btn scenario-btn" data-scn="demo"><span class="swatch"></span>Demo — 7PM / 96%</button>
@@ -272,28 +209,35 @@
     </footer>
 
   </div>
+
+  <!-- ============ EV PROFILE MODAL ============ -->
+  <div class="modal-overlay" id="evModalOverlay">
+    <div class="modal ev-modal" id="evModal">
+      <div class="inspector-head">
+        <div><div class="id" id="pId">—</div></div>
+        <button class="inspector-close" id="pClose">✕</button>
+      </div>
+      <div class="ev-modal-body">
+        <div class="veh3d-wrap" id="pVehicle3d"></div>
+        <div class="inspector-body" style="padding:0 0 14px;">
+          <div class="insp-row"><div class="k">Action</div><div class="v" id="pTag">—</div></div>
+          <div class="insp-row"><div class="k">SOC / required</div><div class="v num" id="pSoc">—</div></div>
+          <div class="insp-row"><div class="k">Departure in</div><div class="v num" id="pDeparture">—</div></div>
+          <div class="insp-row"><div class="k">Battery capacity</div><div class="v num" id="pBattery">—</div></div>
+          <div class="insp-row"><div class="k">Charging status</div><div class="v" id="pCharging">—</div></div>
+          <div class="insp-row"><div class="k">Maximum charge power</div><div class="v num" id="pMaxCharge">—</div></div>
+          <div class="insp-row"><div class="k">V2G capability</div><div class="v" id="pV2g">—</div></div>
+          <div class="insp-row"><div class="k">Flexibility category</div><div class="v num" id="pCategory">—</div></div>
+          <div class="insp-row"><div class="k">Power / reduction</div><div class="v num" id="pMag">—</div></div>
+          <div class="insp-row"><div class="k">Owner reward</div><div class="v num" id="pPayout">—</div></div>
+          <div class="insp-row"><div class="k">Reason</div><div class="insp-reason" id="pReason">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
-<!-- ============ EV PROFILE (global slide-in, opened from any view) ============ -->
-<div class="ev-profile-scrim" id="evProfileScrim"></div>
-<aside class="ev-profile-panel" id="evProfilePanel">
-  <div class="ev-profile-head">
-    <div>
-      <div class="id" id="evProfileId">—</div>
-      <div id="evProfileBadge" style="margin-top:6px;"></div>
-    </div>
-    <button class="ev-profile-close" id="evProfileClose">✕</button>
-  </div>
-  <div class="ev-profile-body">
-    <div class="ev3d-stage" id="ev3dStage"></div>
-    <div class="ev-profile-grid" id="evProfileGrid"></div>
-    <div>
-      <div class="text-label" style="margin-bottom:6px;">Reason for decision</div>
-      <div class="ev-profile-reason" id="evProfileReason">—</div>
-    </div>
-  </div>
-</aside>
-
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>

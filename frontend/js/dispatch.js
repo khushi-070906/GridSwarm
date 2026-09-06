@@ -1,13 +1,13 @@
 /* ==========================================================================
-   dispatch.js — Dispatch Decisions view: the full "why was this EV
-   chosen" explainable list (the Command Center only shows a top-4 peek).
+   dispatch.js — "Dispatch Decisions" view: the filterable per-EV
+   explainability list. Selecting a row opens the shared EV profile modal.
    ========================================================================== */
+import * as state from './state.js';
 import { $, el, fmtKw, fmtInr, fmtMinutes } from './utils.js';
 import { emptyState } from './components.js';
-import * as state from './state.js';
 import { openEvProfile } from './ev-profile.js';
-import { registerView } from './navigation.js';
 
+let currentActions = [];
 let activeFilter = 'all';
 
 const FILTERS = [
@@ -24,32 +24,33 @@ function matchesFilter(action) {
   return activeFilter.split('|').includes(action);
 }
 
-function initFilters(store) {
-  const wrap = $('dispatchFilters');
+export function initDispatchFilters() {
+  renderFilters();
+}
+
+function renderFilters() {
+  const wrap = $('filters');
   wrap.innerHTML = '';
   FILTERS.forEach(f => {
     const chip = el('div', { class: 'chip' + (f.key === activeFilter ? ' on' : '') });
     const swatchColor = f.key === 'all' ? 'var(--ink-faint)' : (state.ACTION_META[f.key.split('|')[0]] || {}).color;
     chip.innerHTML = `<span class="dot" style="background:${swatchColor}"></span>${f.label}`;
-    chip.onclick = () => { activeFilter = f.key; render(store); };
+    chip.onclick = () => { activeFilter = f.key; renderFilters(); renderDecisionList(); };
     wrap.appendChild(chip);
   });
 }
 
-export function render(store) {
-  initFilters(store);
-  const plan = store.plan;
-  const list = $('dispatchList');
-  if (!plan) {
-    $('dispatchCount').textContent = '';
-    emptyState(list, '⇄', 'Run a scenario below to see the dispatch decision and why each EV was chosen.');
-    return;
-  }
+export function renderDispatch(actions) {
+  currentActions = actions;
+  renderDecisionList();
+}
 
-  const visible = plan.actions.filter(a => matchesFilter(a.action));
-  $('dispatchCount').textContent = ` ${visible.length} of ${plan.actions.length}`;
+function renderDecisionList() {
+  const list = $('decisionList');
+  const visible = currentActions.filter(a => matchesFilter(a.action));
+  $('decisionCount').textContent = ` ${visible.length} of ${currentActions.length}`;
   if (visible.length === 0) {
-    emptyState(list, '—', 'Nothing matches this filter.');
+    emptyState(list, '—', currentActions.length ? 'Nothing matches this filter.' : 'Run a scenario below to see the dispatch decision and why each EV was chosen.');
     return;
   }
   const sorted = [...visible].sort((a, b) => (b.payout_inr || 0) - (a.payout_inr || 0));
@@ -76,5 +77,3 @@ export function render(store) {
     list.appendChild(row);
   });
 }
-
-registerView('dispatch', render);

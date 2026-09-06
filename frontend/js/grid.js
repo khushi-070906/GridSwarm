@@ -1,28 +1,45 @@
 /* ==========================================================================
-   grid.js — Grid Events / Grid Response view. Holds the "story" flow
-   (constraint → evaluate → decide → result) that used to sit directly
-   under the Command Center hero showing the same numbers twice.
+   grid.js — "Grid Events" (the constraint signal: before/after utilization,
+   requested vs. actual reduction, duration) and "Grid Response" (the
+   step-by-step response story). This absorbs what used to be the
+   Command Center's duplicate "GridSwarm response" panel — it now lives
+   here instead of repeating the hero stats on the landing view.
    ========================================================================== */
-import { $, el, fmtKw, fmtPct, fmtMinutes } from './utils.js';
-import { emptyState, statCell } from './components.js';
-import { registerView } from './navigation.js';
+import { $, el, fmtKw, fmtInr, fmtPct, fmtMinutes, gridStatus } from './utils.js';
+import { badge, statCell } from './components.js';
 
-export function render(store) {
-  const plan = store.plan;
-  if (!plan) {
-    emptyState($('gridFlow'), '≋', 'Run a scenario to see how GridSwarm responded to the last grid event.');
-    $('gridPerf').innerHTML = '';
-    return;
+export function renderGridEvents(plan, scenarioMeta) {
+  const status = gridStatus(plan.grid_utilization_before);
+
+  const statusRow = $('gridStatusRow');
+  statusRow.innerHTML = '';
+  statusRow.appendChild(badge(status.label, status.key));
+  const zoneSpan = el('span', { class: 'status-pill' });
+  zoneSpan.innerHTML = `<span class="status-dot live"></span>${plan.zone_id}`;
+  statusRow.appendChild(zoneSpan);
+  if (plan.mobility_violations > 0) {
+    statusRow.appendChild(badge('Mobility violation', 'critical'));
   }
 
-  const flow = $('gridFlow');
+  const facts = $('gridFacts');
+  facts.innerHTML = '';
+  facts.appendChild(statCell('Scenario', scenarioMeta?.label || '—'));
+  facts.appendChild(statCell('Utilization before', fmtPct(plan.grid_utilization_before)));
+  facts.appendChild(statCell('Utilization after', fmtPct(plan.grid_utilization_after), 'sage'));
+  facts.appendChild(statCell('Requested reduction', fmtKw(scenarioMeta?.targetKw)));
+  facts.appendChild(statCell('Actual reduction', fmtKw(plan.kw_reduced), 'copper'));
+  facts.appendChild(statCell('Event duration', fmtMinutes(15)));
+}
+
+export function renderGridResponse(plan, scenarioMeta) {
+  const flow = $('responseFlow');
   flow.innerHTML = '';
   const steps = [
     { k: 'Grid constraint', v: fmtPct(plan.grid_utilization_before), d: `${plan.zone_id} transformer` },
     { k: 'Fleet evaluated', v: `${plan.actions.length} EVs`, d: `${plan.evs_protected} protected, structurally excluded` },
-    { k: 'Requested', v: fmtKw(store.lastScenarioMeta?.targetKw), d: 'target reduction' },
+    { k: 'Requested', v: fmtKw(scenarioMeta?.targetKw), d: 'target reduction' },
     { k: 'EVs selected', v: `${plan.evs_participating}`, d: 'ranked by flexibility, least-intrusive action first' },
-    { k: 'Reduction delivered', v: fmtKw(plan.kw_reduced), d: `₹${plan.total_payout_inr.toFixed(2)} paid to owners` },
+    { k: 'Reduction delivered', v: fmtKw(plan.kw_reduced), d: `${fmtInr(plan.total_payout_inr)} paid to owners` },
     { k: 'Projected utilization', v: fmtPct(plan.grid_utilization_after), d: 'after dispatch' },
   ];
   steps.forEach((s, i) => {
@@ -35,17 +52,4 @@ export function render(store) {
       flow.appendChild(arrow);
     }
   });
-
-  const target = store.lastScenarioMeta?.targetKw || 0;
-  const achievedPct = target > 0 ? Math.min(200, (plan.kw_reduced / target) * 100) : 0;
-  const perf = $('gridPerf');
-  perf.innerHTML = '';
-  perf.appendChild(statCell('Utilization before', fmtPct(plan.grid_utilization_before)));
-  perf.appendChild(statCell('Utilization after', fmtPct(plan.grid_utilization_after), 'sage'));
-  perf.appendChild(statCell('Utilization change', `−${(plan.grid_utilization_before - plan.grid_utilization_after).toFixed(1)} pts`));
-  perf.appendChild(statCell('Event duration', fmtMinutes(15)));
-  perf.appendChild(statCell('Target achieved', `${achievedPct.toFixed(0)}%`, achievedPct >= 100 ? 'sage' : 'copper'));
-  perf.appendChild(statCell('Mobility violations', plan.mobility_violations, plan.mobility_violations > 0 ? 'brick' : 'sage'));
 }
-
-registerView('grid', render);

@@ -1,37 +1,21 @@
 /* ==========================================================================
-   fleet.js — Fleet Overview (health, depot yard, distributions) and
-   Vehicles (flat EV table). Both read the same DispatchPlan.actions[].
+   fleet.js — "Fleet Overview" (fleet health stats + distribution charts)
+   and "Vehicles" (the depot yard visualization). Clicking a car opens the
+   shared EV profile modal (ev-profile.js).
    ========================================================================== */
-import { $, el, svgEl, qsa, fmtKw, fmtMinutes } from './utils.js';
-import { emptyState, statCell } from './components.js';
-import { renderBarChart } from './charts.js';
 import * as state from './state.js';
-import { openEvProfile } from './ev-profile.js';
-import { registerView } from './navigation.js';
+import { $, qsa, svgEl } from './utils.js';
+import { statCell } from './components.js';
+import { renderBarChart } from './charts.js';
+import { openEvProfile, getSelectedId, onSelectionChange } from './ev-profile.js';
 
-let selectedId = null;
+let currentActions = [];
 
 /* ---------------------------------------------------------------------- */
 /* Fleet Overview                                                          */
 /* ---------------------------------------------------------------------- */
 
-export function renderFleetOverview(store) {
-  const plan = store.plan;
-  if (!plan) {
-    // Toggle the existing #emptyYard overlay rather than overwriting
-    // #yardWrap's innerHTML — that would also delete #yardSvg and
-    // #emptyYard itself, breaking every later render.
-    $('yardSvg').innerHTML = '';
-    $('emptyYard').style.display = 'flex';
-    $('yardCount').textContent = '';
-    $('fleetCards').innerHTML = '';
-    $('flexChart').innerHTML = '';
-    $('socChart').innerHTML = '';
-    return;
-  }
-
-  renderYard(plan.actions);
-
+export function renderFleetOverview(plan) {
   const ov = state.fleetOverview(plan);
   const cards = $('fleetCards');
   cards.innerHTML = '';
@@ -52,13 +36,22 @@ export function renderFleetOverview(store) {
   ]);
 
   const socDist = state.socDistribution(plan);
-  renderBarChart($('socChart'), Object.entries(socDist).map(([label, value]) => ({ label, value, color: 'var(--verdigris)' })));
+  renderBarChart($('socChart'), Object.entries(socDist).map(([label, value]) => ({
+    label, value, color: 'var(--verdigris)',
+  })));
+}
+
+/* ---------------------------------------------------------------------- */
+/* Vehicles — depot yard (signature visual, unchanged layout logic)        */
+/* ---------------------------------------------------------------------- */
+
+export function renderVehicles(actions) {
+  currentActions = actions;
+  renderYard(actions);
 }
 
 function renderYard(actions) {
   const svg = $('yardSvg');
-  if (!svg) return;
-  $('emptyYard') && ($('emptyYard').style.display = 'none');
   svg.innerHTML = '';
   const n = actions.length || 1;
   const cols = Math.max(4, Math.min(10, Math.ceil(Math.sqrt(n * 2.1))));
@@ -124,7 +117,7 @@ function renderYard(actions) {
       stroke: active ? meta.color : undefined,
     }));
 
-    const g = svgEl('g', { class: 'car' + (active ? ' active' : '') + (a.ev_id === selectedId ? ' selected' : ''), 'data-id': a.ev_id });
+    const g = svgEl('g', { class: 'car' + (active ? ' active' : '') + (a.ev_id === getSelectedId() ? ' selected' : ''), 'data-id': a.ev_id });
     g.appendChild(svgEl('rect', { class: 'body', x: cx - carW / 2, y: cy - carH / 2, width: carW, height: carH, rx: 6, stroke: meta.color }));
     g.appendChild(svgEl('rect', { class: 'cabin', x: cx - carW / 2 + 11, y: cy - carH / 2 + 5, width: carW - 22, height: carH - 10, rx: 3 }));
     [-1, 1].forEach(sx => [-1, 1].forEach(sy => {
@@ -137,49 +130,17 @@ function renderYard(actions) {
     t.textContent = a.ev_id;
     g.appendChild(t);
 
-    g.addEventListener('click', () => { selectedId = a.ev_id; openEvProfile(a); });
+    g.addEventListener('click', () => openEvProfile(a));
     svg.appendChild(g);
   });
 
-  $('yardCount') && ($('yardCount').textContent = `${actions.length} vehicles`);
+  $('emptyYard').style.display = 'none';
+  $('yardCount').textContent = `${actions.length} vehicles`;
 }
 
-/* ---------------------------------------------------------------------- */
-/* Vehicles table                                                           */
-/* ---------------------------------------------------------------------- */
-
-export function renderVehicles(store) {
-  const plan = store.plan;
-  const tbody = $('vehicleTableBody');
-  if (!plan) {
-    emptyState($('vehiclesEmpty'), '▭', 'Run a scenario to populate the vehicle list.');
-    $('vehiclesEmpty').style.display = 'flex';
-    $('vehicleTable').style.display = 'none';
-    return;
-  }
-  $('vehiclesEmpty').style.display = 'none';
-  $('vehicleTable').style.display = 'table';
-
-  tbody.innerHTML = '';
-  const sorted = [...plan.actions].sort((a, b) => a.ev_id.localeCompare(b.ev_id));
-  sorted.forEach(a => {
-    const ctx = a.ev_context;
-    const meta = state.ACTION_META[a.action] || state.ACTION_META.no_action;
-    const tr = el('tr');
-    tr.innerHTML = `
-      <td class="id">${a.ev_id}</td>
-      <td>${ctx ? ctx.soc_percent.toFixed(0) + '%' : '—'}</td>
-      <td>${ctx ? ctx.required_soc_percent.toFixed(0) + '%' : '—'}</td>
-      <td>${ctx ? fmtMinutes(ctx.departure_minutes) : '—'}</td>
-      <td><span class="badge ${ctx ? ctx.flexibility_category : ''}" style="font-size:9.5px;">${ctx ? ctx.flexibility_category.toUpperCase() : '—'}</span></td>
-      <td><span class="badge ${a.action}" style="font-size:9.5px;">${meta.label}</span></td>
-      <td>${a.magnitude_kw != null ? fmtKw(a.magnitude_kw) : '—'}</td>
-      <td>${a.payout_inr > 0 ? '₹' + a.payout_inr.toFixed(2) : '—'}</td>
-    `;
-    tr.addEventListener('click', () => openEvProfile(a));
-    tbody.appendChild(tr);
-  });
-}
-
-registerView('fleet', renderFleetOverview);
-registerView('vehicles', renderVehicles);
+// Keep the yard's "selected" ring in sync with whichever EV is open in the
+// profile modal, regardless of whether it was opened from here or from
+// the dispatch decision list.
+onSelectionChange((id) => {
+  qsa('.car').forEach(g => g.classList.toggle('selected', g.getAttribute('data-id') === id));
+});

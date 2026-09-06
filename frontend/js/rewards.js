@@ -1,15 +1,19 @@
 /* ==========================================================================
-   rewards.js — Rewards & Incentives view.
+   rewards.js — "Rewards & Incentives" view. Same ledger calls as before.
    ========================================================================== */
-import { $, el, fmtInr } from './utils.js';
-import { emptyState, statCell } from './components.js';
+import * as api from './api.js';
 import * as state from './state.js';
-import { registerView } from './navigation.js';
+import { $, el, fmtInr } from './utils.js';
+import { statCell, emptyState } from './components.js';
 
-export function render(store) {
-  const plan = store.plan;
-  const r = state.rewardsSummary(plan || { actions: [], total_payout_inr: 0 }, store.ledgerTotals);
+export async function renderRewards(plan) {
+  let totals = {};
+  let entries = [];
+  try {
+    [totals, entries] = await Promise.all([api.ledgerTotals(), api.ledgerEntries()]);
+  } catch (e) { /* ledger is best-effort; rest of the app still works */ }
 
+  const r = state.rewardsSummary(plan, totals);
   const grid = $('rewardGrid');
   grid.innerHTML = '';
   grid.appendChild(statCell('This event', fmtInr(r.eventPayout), 'sage'));
@@ -18,12 +22,12 @@ export function render(store) {
   grid.appendChild(statCell('Average reward', fmtInr(r.avgReward)));
 
   const recent = $('recentActivity');
-  if (!store.ledgerEntries.length) {
+  if (!entries.length) {
     emptyState(recent, '—', 'No payouts recorded yet.');
     return;
   }
   recent.innerHTML = '';
-  store.ledgerEntries.slice(-10).reverse().forEach(e => {
+  entries.slice(-8).reverse().forEach(e => {
     const meta = state.ACTION_META[e.action] || state.ACTION_META.no_action;
     const row = el('div', { class: 'timeline-row' });
     row.innerHTML = `
@@ -34,5 +38,3 @@ export function render(store) {
     recent.appendChild(row);
   });
 }
-
-registerView('rewards', render);
