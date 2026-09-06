@@ -10,6 +10,18 @@ export function badge(text, key) {
   return b;
 }
 
+/** Restrained action indicator used in the Dispatch Decisions list and the
+    EV profile — a small square dot + uppercase text in the action's
+    semantic colour, deliberately NOT a bordered/filled pill. Keeps the
+    same colour semantics as the old `badge(label, actionKey)` (discharge
+    stays copper, pause/reduce stays verdigris, etc.) without the large
+    visual footprint of a status badge. */
+export function actionTag(label, colorVar) {
+  const t = el('span', { class: 'action-tag', style: `--action-color:${colorVar}` });
+  t.innerHTML = `<span class="action-tag-dot"></span>${label}`;
+  return t;
+}
+
 export function statCell(k, v, extraClass = '') {
   const s = el('div', { class: 'stat' });
   s.innerHTML = `<div class="k">${k}</div><div class="v ${extraClass}">${v}</div>`;

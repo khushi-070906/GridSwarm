@@ -6,7 +6,7 @@
    consistent with the rest of the project's hand-rolled-SVG approach).
    ========================================================================== */
 import { $, fmtKw, fmtInr, fmtMinutes } from './utils.js';
-import { badge } from './components.js';
+import { actionTag } from './components.js';
 import * as state from './state.js';
 
 let selectedId = null;
@@ -47,7 +47,7 @@ function populate(a) {
 
   $('pId').textContent = a.ev_id;
   $('pTag').innerHTML = '';
-  $('pTag').appendChild(badge(meta.label, a.action));
+  $('pTag').appendChild(actionTag(meta.label, meta.color));
 
   $('pSoc').textContent = ctx ? `${ctx.soc_percent.toFixed(0)}% (needs ${ctx.required_soc_percent.toFixed(0)}%)` : '—';
   $('pDeparture').textContent = ctx ? fmtMinutes(ctx.departure_minutes) : '—';
@@ -72,29 +72,39 @@ function populate(a) {
   }
 }
 
-/** Lightweight CSS-3D car: two boxes (body + cabin) built from six/five
-    div "faces" each, positioned with translateZ/rotateY, slowly spun via
-    a CSS animation. No canvas/WebGL/three.js — degrades gracefully to a
-    static shape if 3D transforms aren't supported, and never blocks the
-    rest of the profile from rendering. */
+/** Lightweight CSS-3D car — no canvas/WebGL/three.js, just
+    perspective/preserve-3d, consistent with the rest of the project's
+    hand-rolled approach. Two stacked boxes (body + cabin), each built
+    from named faces (two long sides, a front cap, a rear cap, a
+    top/roof, and — body only — a bottom), plus wheels with their own
+    front/back tire+hub layers so they read as cylinders rather than
+    flat discs, a charging port on the rear cap, a chassis strip, and a
+    static (non-rotating) ground shadow so the car doesn't look like it's
+    floating. Degrades gracefully to a flat schematic if anything throws. */
 function renderVehicle3D(container, actionKey) {
   const meta = state.ACTION_META[actionKey] || state.ACTION_META.no_action;
+  const isActive = meta.dir !== null;
   container.innerHTML = `
     <div class="veh3d">
-      <div class="veh3d-stage" style="--veh-color:${meta.color}">
+      <div class="veh3d-stage${isActive ? ' active' : ''}" style="--veh-color:${meta.color}">
         <div class="veh3d-body">
           <div class="face top"></div><div class="face bottom"></div>
-          <div class="face front"></div><div class="face back"></div>
-          <div class="face left"></div><div class="face right"></div>
+          <div class="face side-a"></div><div class="face side-b"></div>
+          <div class="face cap-front"></div><div class="face cap-rear"></div>
         </div>
         <div class="veh3d-cabin">
-          <div class="face top"></div>
-          <div class="face front"></div><div class="face back"></div>
-          <div class="face left"></div><div class="face right"></div>
+          <div class="face roof"></div>
+          <div class="face glass side-a"></div><div class="face glass side-b"></div>
+          <div class="face glass cap-front"></div><div class="face glass cap-rear"></div>
         </div>
-        <div class="veh3d-wheel fl"></div><div class="veh3d-wheel fr"></div>
-        <div class="veh3d-wheel bl"></div><div class="veh3d-wheel br"></div>
+        <div class="veh3d-chassis"></div>
+        <div class="veh3d-port"><span class="dot"></span></div>
+        <div class="veh3d-wheel fl"><span class="tire"></span><span class="hub"></span></div>
+        <div class="veh3d-wheel fr"><span class="tire"></span><span class="hub"></span></div>
+        <div class="veh3d-wheel bl"><span class="tire"></span><span class="hub"></span></div>
+        <div class="veh3d-wheel br"><span class="tire"></span><span class="hub"></span></div>
       </div>
+      <div class="veh3d-ground"></div>
     </div>
   `;
 }

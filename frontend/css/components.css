@@ -34,6 +34,20 @@
 }
 .badge.outline{background:transparent;}
 
+/* ---- action indicator (Dispatch list + EV profile) ----
+   Deliberately NOT a badge: no fill, no border, no pill shape. Just a
+   small square dot in the action's semantic colour followed by plain
+   uppercase text, so a list of 8+ decisions reads as an operations log
+   rather than a row of coloured alert chips. Colour semantics unchanged
+   (discharge=copper, pause/reduce=verdigris, solar=brass, protected=sage,
+   no_action=neutral) — only the visual weight is reduced. */
+.action-tag{
+  display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;
+  letter-spacing:.05em;text-transform:uppercase;color:var(--action-color, var(--ink-dim));
+  white-space:nowrap;line-height:1.3;
+}
+.action-tag-dot{width:6px;height:6px;border-radius:1px;background:var(--action-color, var(--ink-dim));flex:none;}
+
 /* ---- buttons ---- */
 .btn{
   font-family:var(--font-body);font-size:12.5px;font-weight:600;color:var(--ink-dim);
@@ -85,18 +99,30 @@
 
 /* ---- explainability list ---- */
 .decision-row{
-  display:grid;grid-template-columns:64px 1fr auto;gap:var(--sp-3);align-items:center;
+  display:grid;grid-template-columns:136px 1fr auto;grid-template-areas:"id body result";
+  gap:var(--sp-3);align-items:center;
   padding:var(--sp-3) var(--sp-4);border-bottom:1px solid var(--line-soft);cursor:pointer;
+  border-left:2px solid var(--row-accent, transparent);
 }
 .decision-row:hover{background:var(--bg-2);}
 .decision-row:last-child{border-bottom:none;}
+.decision-idcol{grid-area:id;display:flex;flex-direction:column;gap:4px;min-width:0;}
+.decision-body{grid-area:body;min-width:0;}
 .decision-row .ev-id{font-family:var(--font-mono);font-weight:600;font-size:12.5px;}
-.decision-row .meta{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11px;color:var(--ink-dim);margin-top:4px;}
+.decision-row .meta{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11px;color:var(--ink-dim);}
 .decision-row .meta b{color:var(--ink);font-weight:600;}
 .decision-row .reason{font-size:11.5px;color:var(--ink-faint);margin-top:4px;line-height:1.4;}
-.decision-row .result{text-align:right;}
+.decision-row .result{grid-area:result;text-align:right;}
 .decision-row .result .kw{font-family:var(--font-mono);font-size:13px;}
 .decision-row .result .inr{font-family:var(--font-mono);font-size:11.5px;color:var(--sage);}
+
+@media (max-width: 560px){
+  .decision-row{
+    grid-template-columns:1fr auto;
+    grid-template-areas:"id result" "body body";
+    row-gap:6px;
+  }
+}
 
 /* ---- stat cell ---- */
 .stat{padding:var(--sp-3) var(--sp-4);}
@@ -112,6 +138,7 @@
 .bar-chart .bar-label{width:78px;flex:none;font-size:11px;color:var(--ink-dim);}
 .bar-chart .bar-track{display:flex;flex:1;height:8px;background:var(--line-soft);border-radius:2px;overflow:hidden;}
 .bar-chart .bar-fill{display:block;height:100%;border-radius:2px;min-width:0;transition:width .2s ease;}
+.bar-chart .bar-fill.zero{min-width:2px;background:var(--line) !important;}
 .bar-chart .bar-amt{width:44px;flex:none;text-align:right;font-family:var(--font-mono);font-size:11px;color:var(--ink-dim);}
 
 /* ---- empty / loading / error states ---- */
