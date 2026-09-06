@@ -1,0 +1,129 @@
+/* ==========================================================================
+   app.css — sidebar navigation, view switching, EV profile modal,
+   and the CSS-3D vehicle visualization. Reuses tokens from base.css and
+   component classes from components.css; no new color palette introduced.
+   ========================================================================== */
+
+/* ---- sidebar ---- */
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:222px;z-index:40;
+  background:var(--bg-2);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;
+}
+.sidebar-brand{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line);flex:none;}
+.sidebar-brand .mark{
+  width:26px;height:26px;flex:none;border-radius:2px;
+  background:
+    linear-gradient(180deg, transparent 46%, var(--copper) 46%, var(--copper) 54%, transparent 54%),
+    linear-gradient(90deg, transparent 46%, var(--copper) 46%, var(--copper) 54%, transparent 54%),
+    var(--panel-2);
+  border:1px solid var(--line);
+}
+.sidebar-name{font-family:var(--font-display);font-weight:700;font-size:16px;letter-spacing:.03em;line-height:1.1;}
+.sidebar-sub{font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.07em;margin-top:2px;}
+
+.sidebar-nav{flex:1;overflow-y:auto;padding:14px 10px;}
+.nav-group{margin-bottom:16px;}
+.nav-group-label{
+  font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-faint);
+  padding:0 10px;margin-bottom:6px;font-weight:600;
+}
+.nav-link{
+  display:block;padding:8px 10px;border-radius:var(--radius);font-size:13px;color:var(--ink-dim);
+  margin-bottom:2px;border:1px solid transparent;
+}
+.nav-link:hover{color:var(--ink);background:var(--panel);}
+.nav-link.active{color:var(--ink);background:var(--panel);border-color:var(--line);font-weight:600;box-shadow:inset 2px 0 0 var(--copper);}
+
+.sidebar-foot{padding:12px 14px;border-top:1px solid var(--line);flex:none;}
+.sidebar-foot .status-pill{width:100%;justify-content:center;}
+
+.sidebar-backdrop{display:none;}
+
+/* ---- main column offset by fixed sidebar ---- */
+.main-col{margin-left:222px;min-height:100vh;display:flex;flex-direction:column;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-title{font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:.01em;}
+.drawer-toggle{
+  display:none;background:none;border:1px solid var(--line);border-radius:var(--radius);
+  color:var(--ink-dim);font-size:15px;padding:5px 9px;cursor:pointer;
+}
+
+/* ---- view switching ---- */
+.view[hidden]{display:none !important;}
+
+/* ---- EV profile modal ---- */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(10,10,10,.6);display:none;
+  align-items:center;justify-content:center;z-index:100;padding:20px;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);
+  width:100%;max-width:460px;max-height:90vh;overflow-y:auto;
+  box-shadow:0 16px 48px rgba(0,0,0,.5);
+}
+.ev-modal-body{padding:0 16px 4px;}
+
+/* ---- CSS-3D vehicle visualization ---- */
+.veh3d-wrap{
+  display:flex;align-items:center;justify-content:center;
+  padding:20px 0 6px;background:var(--panel-2);border-bottom:1px solid var(--line);
+}
+.veh3d{width:150px;height:120px;perspective:480px;}
+.veh3d-stage{
+  position:relative;width:100%;height:100%;transform-style:preserve-3d;
+  animation:veh3d-spin 10s linear infinite;
+  transform:rotateX(-18deg);
+}
+@keyframes veh3d-spin{
+  from{transform:rotateX(-18deg) rotateY(0deg);}
+  to{transform:rotateX(-18deg) rotateY(360deg);}
+}
+.veh3d-body,.veh3d-cabin{position:absolute;transform-style:preserve-3d;left:50%;top:50%;}
+.veh3d-body{width:96px;height:34px;margin:-17px 0 0 -48px;transform:translateZ(0) translateY(14px);}
+.veh3d-cabin{width:52px;height:26px;margin:-13px 0 0 -26px;transform:translateY(-14px) translateX(4px);}
+.veh3d-body .face,.veh3d-cabin .face{
+  position:absolute;inset:0;background:var(--veh-color, var(--copper));
+  border:1px solid rgba(0,0,0,.35);opacity:.92;
+}
+.veh3d-body .face.front{transform:rotateY(0deg) translateZ(21px);}
+.veh3d-body .face.back{transform:rotateY(180deg) translateZ(21px);}
+.veh3d-body .face.left{width:42px;transform:rotateY(-90deg) translateZ(48px);left:27px;}
+.veh3d-body .face.right{width:42px;transform:rotateY(90deg) translateZ(48px);left:27px;}
+.veh3d-body .face.top{height:42px;transform:rotateX(90deg) translateZ(17px);top:-4px;filter:brightness(1.18);}
+.veh3d-body .face.bottom{height:42px;transform:rotateX(-90deg) translateZ(17px);top:-4px;filter:brightness(.6);}
+.veh3d-cabin .face.front{transform:rotateY(0deg) translateZ(13px);}
+.veh3d-cabin .face.back{transform:rotateY(180deg) translateZ(13px);}
+.veh3d-cabin .face.left{width:26px;transform:rotateY(-90deg) translateZ(26px);left:13px;}
+.veh3d-cabin .face.right{width:26px;transform:rotateY(90deg) translateZ(26px);left:13px;}
+.veh3d-cabin .face.top{height:26px;transform:rotateX(90deg) translateZ(13px);top:0;filter:brightness(1.3);}
+.veh3d-wheel{
+  position:absolute;width:12px;height:12px;border-radius:50%;background:#101011;
+  border:1px solid #000;top:50%;left:50%;transform-style:preserve-3d;
+}
+.veh3d-wheel.fl{transform:translate3d(-34px,10px,26px);}
+.veh3d-wheel.fr{transform:translate3d(-34px,10px,-26px);}
+.veh3d-wheel.bl{transform:translate3d(28px,10px,26px);}
+.veh3d-wheel.br{transform:translate3d(28px,10px,-26px);}
+.veh3d-fallback{
+  padding:14px;color:var(--ink-faint);font-size:11.5px;text-align:center;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .veh3d-stage{animation:none;}
+}
+
+/* ---- responsive: collapsible drawer sidebar ---- */
+@media (max-width: 880px){
+  .sidebar{
+    transform:translateX(-100%);transition:transform .18s ease;box-shadow:0 0 0 rgba(0,0,0,0);
+  }
+  .sidebar.open{transform:translateX(0);box-shadow:6px 0 24px rgba(0,0,0,.4);}
+  .main-col{margin-left:0;}
+  .drawer-toggle{display:inline-flex;align-items:center;justify-content:center;}
+  .sidebar-backdrop{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:35;
+  }
+  .sidebar-backdrop.show{display:block;}
+}
