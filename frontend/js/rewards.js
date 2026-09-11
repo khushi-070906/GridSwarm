@@ -10,6 +10,7 @@ import * as api from './api.js';
 import * as state from './state.js';
 import { $, el, fmtInr } from './utils.js';
 import { emptyState, statCell } from './components.js';
+import { renderBarChart } from './charts.js';
 
 export async function renderRewards(plan) {
   let totals = {};
@@ -30,6 +31,9 @@ export async function renderRewards(plan) {
     grid.appendChild(statCell('Average reward', fmtInr(r.avgReward)));
   }
 
+  renderRewardByAction(plan);
+  renderParticipationByAction(plan);
+
   const recent = $('recentActivity');
   if (!recent) return;
   if (!entries.length) {
@@ -47,4 +51,38 @@ export async function renderRewards(plan) {
     `;
     recent.appendChild(row);
   });
+}
+
+/** "Reward by action" — total payout this event, grouped by dispatch
+    action. Values come straight from state.rewardsByAction(plan); bar
+    width uses the raw INR total, the label shows it formatted. */
+function renderRewardByAction(plan) {
+  const container = $('rewardByActionChart');
+  if (!container) return;
+  const rows = state.rewardsByAction(plan).map(({ action, total }) => {
+    const meta = state.ACTION_META[action] || state.ACTION_META.no_action;
+    return { label: meta.label, value: total, color: meta.color, display: fmtInr(total) };
+  });
+  if (!rows.length) {
+    emptyState(container, '—', 'No incentive-earning actions in the current event yet.');
+    return;
+  }
+  renderBarChart(container, rows);
+}
+
+/** "Participation by action" — how many EVs earned a reward through each
+    action this event. Same payout_inr > 0 scope as the chart above, so
+    both describe the same set of actions. */
+function renderParticipationByAction(plan) {
+  const container = $('participationByActionChart');
+  if (!container) return;
+  const rows = state.participationByAction(plan).map(({ action, count }) => {
+    const meta = state.ACTION_META[action] || state.ACTION_META.no_action;
+    return { label: meta.label, value: count, color: meta.color, display: `${count} EV${count === 1 ? '' : 's'}` };
+  });
+  if (!rows.length) {
+    emptyState(container, '—', 'No EVs earned a reward in the current event yet.');
+    return;
+  }
+  renderBarChart(container, rows);
 }

@@ -75,6 +75,109 @@ export function availableFlexibilityKw(plan) {
   }, 0);
 }
 
+/** How the CURRENT event's reduction was actually achieved — total kW
+    contributed and EV count per active dispatch action (discharge, pause,
+    reduce, solar-align). Protected/no-action EVs are deliberately excluded
+    here: they contributed no reduction, and "how many were protected" is
+    already its own metric in responseSummary() — including them would
+    just duplicate that number as the dominant bar in this chart. */
+export function actionMix(plan) {
+  const kwByAction = {};
+  const countByAction = {};
+  for (const a of plan?.actions || []) {
+    if (!(a.magnitude_kw > 0)) continue;
+    kwByAction[a.action] = (kwByAction[a.action] || 0) + a.magnitude_kw;
+    countByAction[a.action] = (countByAction[a.action] || 0) + 1;
+  }
+  return Object.keys(kwByAction)
+    .map(action => ({ action, kw: kwByAction[action], count: countByAction[action] }))
+    .sort((a, b) => b.kw - a.kw);
+}
+
+/** Consolidated "how did the response go" numbers for the Command
+    Center's Current Response section — all derived straight from the
+    current plan plus the target kW the operator actually requested for
+    this run (scenarioMeta.targetKw). Percentages are null (not 0) when
+    the denominator is unknown/zero, so callers can render "—" instead of
+    a misleading 0%. */
+export function responseSummary(plan, scenarioMeta) {
+  const targetKw = scenarioMeta?.targetKw ?? null;
+  const achievedKw = plan?.kw_reduced ?? 0;
+  const achievementPct = targetKw ? Math.min(999, (achievedKw / targetKw) * 100) : null;
+
+  const totalEvaluated = plan?.actions?.length || 0;
+  const protectedCount = plan?.evs_protected ?? 0;
+  const protectionPct = totalEvaluated ? (protectedCount / totalEvaluated) * 100 : null;
+
+  const availableKw = availableFlexibilityKw(plan);
+  const utilizedPct = availableKw > 0 ? Math.min(100, (achievedKw / availableKw) * 100) : null;
+
+  return {
+    targetKw, achievedKw, achievementPct,
+    totalEvaluated, protectedCount, protectionPct,
+    availableKw, utilizedPct,
+    participating: plan?.evs_participating ?? 0,
+  };
+}
+
+/** One dynamically generated operator sentence — never a template with
+    blanks, always built from the real numbers in `summary`
+    (state.responseSummary output). */
+export function responseSentence(summary) {
+  if (!summary.achievedKw && !summary.participating) {
+    return `GridSwarm evaluated ${summary.totalEvaluated} EV${summary.totalEvaluated === 1 ? '' : 's'} and found no flexibility action necessary this run.`;
+  }
+  return `GridSwarm delivered ${summary.achievedKw.toFixed(1)} kW of reduction through `
+    + `${summary.participating} EV${summary.participating === 1 ? '' : 's'} while protecting `
+    + `${summary.protectedCount} vehicle${summary.protectedCount === 1 ? '' : 's'}.`;
+}
+
+/** One real, ordered record of an actual scenario run, for Command
+    Center's own session-local run history (kept separate from the
+    Activity page's timeline — dashboard.js accumulates this itself from
+    the plan/scenarioMeta it already receives on every real run, so no
+    new coupling to app.js or new API calls is introduced). */
+export function sessionRunFromPlan(plan, scenarioMeta) {
+  return {
+    time: new Date(),
+    label: scenarioMeta?.label || plan.zone_id,
+    targetKw: scenarioMeta?.targetKw ?? null,
+    utilizationBefore: plan.grid_utilization_before,
+    utilizationAfter: plan.grid_utilization_after,
+    kwReduced: plan.kw_reduced,
+    participating: plan.evs_participating,
+    protectedCount: plan.evs_protected,
+  };
+}
+
+/** Total payout for the CURRENT event, grouped by dispatch action. Only
+    actions that actually paid out appear (mirrors the `payout_inr > 0`
+    filter rewardsSummary already uses for eventParticipants) — sorted
+    highest total first. Nothing here is historical/ledger data, only
+    the current plan's own actions. */
+export function rewardsByAction(plan) {
+  const totals = {};
+  for (const a of plan?.actions || []) {
+    if (a.payout_inr > 0) totals[a.action] = (totals[a.action] || 0) + a.payout_inr;
+  }
+  return Object.entries(totals)
+    .map(([action, total]) => ({ action, total }))
+    .sort((a, b) => b.total - a.total);
+}
+
+/** EV count for the CURRENT event, grouped by dispatch action. Same
+    payout_inr > 0 scope as rewardsByAction, so the two charts describe
+    the same set of actions (the ones that drew on the incentive budget). */
+export function participationByAction(plan) {
+  const counts = {};
+  for (const a of plan?.actions || []) {
+    if (a.payout_inr > 0) counts[a.action] = (counts[a.action] || 0) + 1;
+  }
+  return Object.entries(counts)
+    .map(([action, count]) => ({ action, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
 /** Rewards summary for the current plan + all-time ledger totals. */
 export function rewardsSummary(plan, ledgerTotalsObj) {
   const eventPayout = plan?.total_payout_inr || 0;
