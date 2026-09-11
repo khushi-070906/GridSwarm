@@ -2,6 +2,34 @@
    Operator dashboard — B2B grid-ops view
    ========================================================================== */
 
+/* ---- Command Center layout (surgical width/spacing adjustments only) ----
+   `.content`'s max-width lives in layout.css and is shared by every view
+   (Fleet, Dispatch, Activity, Rewards, etc). We don't want to change that
+   globally, so this rule only widens `.content` while the Command Center
+   view is the one actually shown (no [hidden] attribute on it). The `:has()`
+   selector's specificity beats the plain `.content` rule regardless of
+   stylesheet order, so no other view or the sidebar/shell is affected. */
+.content:has(#view-command:not([hidden])){
+  max-width: 1600px;
+}
+
+/* Comfortable breathing room between "Current response" and the
+   action-mix / trend group below it, without touching the normal gap
+   used between every other pair of Command Center sections. */
+.command-actionmix{margin-top:var(--sp-5);}
+
+/* Extra breathing room before "Current response", on top of the base
+   `.content` gap (defined in layout.css and shared by every view), so
+   Current Grid State and Current Response read as clearly separate
+   sections. Scoped to this Command Center-only class — no other
+   section's spacing, and no other view's `.content` gap, is touched. */
+.command-current-response{margin-top:18px;}
+
+/* Extra breathing room before the trend-chart row, on top of the same
+   base `.content` gap, so Response Action Mix and the two trend charts
+   read as clearly separate sections. Scoped the same way. */
+.command-trend-row{margin-top:18px;}
+
 /* ---- hero ---- */
 .hero{display:grid;grid-template-columns:220px 1fr;gap:var(--sp-5);align-items:center;}
 .hero .gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;}
@@ -19,6 +47,21 @@
 .badge.solar_align{background:rgba(181,147,79,.14);color:var(--brass);border-color:var(--brass);}
 .badge.no_action{background:rgba(87,88,90,.2);color:var(--ink-dim);border-color:var(--idle);}
 .hero-updated{font-size:11px;color:var(--ink-faint);}
+
+/* ---- Current Response (Command Center) ---- */
+.response-sentence{font-size:14px;color:var(--ink);line-height:1.55;}
+
+/* Action-mix chart needs a touch more room than the default
+   .bar-label/.bar-amt (78px/44px) for labels like "Discharge (V2G)" and
+   "18.5 kW · 4 EVs". Scoped to this one container ID so Fleet Overview's
+   flex/SOC charts and the Rewards charts — which share the same
+   .bar-chart markup — are unaffected. */
+#actionMixChart .bar-label{width:118px;}
+#actionMixChart .bar-amt{width:112px;}
+
+/* ---- line chart axis text (SVG <text>, needs explicit font since it
+   doesn't inherit body typography) ---- */
+.linechart-axis{font-family:var(--font-mono);font-size:9px;fill:var(--ink-faint);}
 
 /* ---- yard visualization ---- */
 .yard-wrap{position:relative;height:420px;min-height:0;overflow:hidden;background:var(--asphalt);
@@ -66,6 +109,16 @@ svg.yard{width:100%;height:100%;display:block;}
 /* ---- rewards ---- */
 .reward-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--sp-3);}
 .reward-grid .stat{background:var(--panel);}
+
+/* Reward-by-action / participation-by-action charts need more room than
+   the default .bar-label/.bar-amt (78px/44px) for labels like "Discharge
+   (V2G)" and currency amounts like "₹27.00". Scoped to these two
+   container IDs only so Fleet Overview's flex/SOC charts — which share
+   the same .bar-chart markup — keep their existing 78px/44px columns. */
+#rewardByActionChart .bar-label,
+#participationByActionChart .bar-label{width:128px;}
+#rewardByActionChart .bar-amt,
+#participationByActionChart .bar-amt{width:64px;}
 
 /* ---- scenario controls ---- */
 .scenario-group{display:flex;gap:7px;flex-wrap:wrap;}

@@ -98,6 +98,36 @@
             </div>
           </div>
         </section>
+
+        <section class="card command-current-response">
+          <div class="card-head"><div class="card-title">Current response</div></div>
+          <div class="card-body">
+            <div class="response-sentence" id="responseSentence"></div>
+            <div class="fleet-cards" id="responseStats" style="margin-top:var(--sp-4);"></div>
+          </div>
+        </section>
+
+        <section class="card command-actionmix">
+          <div class="card-head"><div class="card-title">Response action mix</div></div>
+          <div class="card-body">
+            <div id="actionMixChart"></div>
+          </div>
+        </section>
+
+        <div class="grid-2col command-trend-row">
+          <section class="card">
+            <div class="card-head"><div class="card-title">Grid utilization trend</div></div>
+            <div class="card-body">
+              <div id="utilTrendChart"></div>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-head"><div class="card-title">Reduction performance</div></div>
+            <div class="card-body">
+              <div id="reductionTrendChart"></div>
+            </div>
+          </section>
+        </div>
       </section>
 
       <!-- ============ FLEET OVERVIEW ============ -->
@@ -185,7 +215,14 @@
           <div class="card-head"><div class="card-title">Rewards &amp; incentives</div></div>
           <div class="card-body">
             <div class="reward-grid" id="rewardGrid"></div>
-            <div class="card-title" style="margin:var(--sp-2) 0 4px;">Recent payouts</div>
+
+            <div class="card-title" style="margin:var(--sp-4) 0 8px;">Reward by action</div>
+            <div id="rewardByActionChart"></div>
+
+            <div class="card-title" style="margin:var(--sp-4) 0 8px;">Participation by action</div>
+            <div id="participationByActionChart"></div>
+
+            <div class="card-title" style="margin:var(--sp-4) 0 4px;">Recent payouts</div>
             <div id="recentActivity"></div>
           </div>
         </section>
